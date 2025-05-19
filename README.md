@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Showmate 2025
 
-## Getting Started
+Application de gestion de projets et d'événements pour les professionnels du spectacle.
 
-First, run the development server:
+## 🚀 Fonctionnalités
 
+- 🔐 Authentification sécurisée avec Firebase
+- 📅 Gestion de projets et d'événements
+- 📍 Gestion des lieux
+- 👥 Gestion des équipes et des rôles
+- 🎨 Interface moderne et responsive
+- 🌙 Mode sombre/clair
+
+## 🛠️ Technologies
+
+- Next.js 14
+- React 18
+- TypeScript
+- Firebase (Authentication, Firestore)
+- Tailwind CSS
+- Shadcn/ui
+- Zustand (State Management)
+
+## 📋 Prérequis
+
+- Node.js 18.17 ou supérieur
+- npm ou yarn
+- Compte Firebase
+
+## 🚀 Installation
+
+1. Cloner le repository :
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/votre-username/showmate-2025.git
+cd showmate-2025
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Installer les dépendances :
+```bash
+npm install
+# ou
+yarn install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Configurer les variables d'environnement :
+Créer un fichier `.env.local` à la racine du projet avec les variables suivantes :
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=votre_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=votre_auth_domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=votre_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=votre_storage_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=votre_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=votre_app_id
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Lancer le serveur de développement :
+```bash
+npm run dev
+# ou
+yarn dev
+```
 
-## Learn More
+## 📁 Structure du Projet
 
-To learn more about Next.js, take a look at the following resources:
+```
+showmate/
+├── src/
+│   ├── app/              # Routes et pages Next.js
+│   ├── components/       # Composants réutilisables
+│   ├── features/         # Fonctionnalités principales
+│   ├── hooks/           # Hooks personnalisés
+│   ├── lib/             # Utilitaires et configurations
+│   ├── stores/          # État global (Zustand)
+│   └── types/           # Types TypeScript
+├── public/              # Fichiers statiques
+└── ...
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔧 Scripts Disponibles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` : Lance le serveur de développement
+- `npm run build` : Compile l'application pour la production
+- `npm run start` : Lance l'application en production
+- `npm run lint` : Vérifie le code avec ESLint
+- `npm run type-check` : Vérifie les types TypeScript
 
-## Deploy on Vercel
+## 🤝 Contribution
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Fork le projet
+2. Créer une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
+3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrir une Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📝 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## 👥 Auteurs
+
+- Votre Nom - Développeur Principal
+
+## 🙏 Remerciements
+
+- [Next.js](https://nextjs.org/)
+- [Firebase](https://firebase.google.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Shadcn/ui](https://ui.shadcn.com/)

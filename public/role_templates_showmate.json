@@ -1,0 +1,863 @@
+[
+  {
+    "id": "acteur",
+    "label": "Acteur",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "agent_de_securite",
+    "label": "Agent de Sécurité",
+    "category": "Organisation",
+    "icon": "🛡️",
+    "isDefault": true
+  },
+  {
+    "id": "agent_prevention",
+    "label": "Agent de Prévention",
+    "category": "Organisation",
+    "icon": "🔒",
+    "isDefault": true
+  },
+  {
+    "id": "agent_securite_principal",
+    "label": "Agent de Sécurité Principal",
+    "category": "Organisation",
+    "icon": "🛡️",
+    "isDefault": true
+  },
+  {
+    "id": "animateur",
+    "label": "Animateur",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "artiste",
+    "label": "Artiste",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "assitant_camera",
+    "label": "Assitant Caméra",
+    "category": "Vidéo",
+    "icon": "🎬",
+    "isDefault": true
+  },
+  {
+    "id": "assistant_de_production",
+    "label": "Assistant de Production",
+    "category": "Production",
+    "icon": "🏗️",
+    "isDefault": true
+  },
+  {
+    "id": "assistant_plateau",
+    "label": "Assistant Plateau",
+    "category": "Production",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "assistant_realisateur",
+    "label": "Assistant Réalisateur",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "assistant_regisseur",
+    "label": "Assistant Régisseur",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "assistant_son",
+    "label": "Assistant Son",
+    "category": "Son",
+    "icon": "🎤",
+    "isDefault": true
+  },
+  {
+    "id": "attache_presse",
+    "label": "Attaché de Presse",
+    "category": "Organisation",
+    "icon": "📰",
+    "isDefault": true
+  },
+  {
+    "id": "autre",
+    "label": "Autre",
+    "category": "Autre",
+    "icon": "🧑‍🔧",
+    "isDefault": true
+  },
+  {
+    "id": "barman",
+    "label": "Barman",
+    "category": "Restauration",
+    "icon": "🍽️",
+    "isDefault": true
+  },
+  {
+    "id": "billetere",
+    "label": "Billetere",
+    "category": "Ventes",
+    "icon": "💶",
+    "isDefault": true
+  },
+  {
+    "id": "cadreur",
+    "label": "Cadreur",
+    "category": "Vidéo",
+    "icon": "🎬",
+    "isDefault": true
+  },
+  {
+    "id": "cascadeur",
+    "label": "Cascadeur",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "cascadeur_principal",
+    "label": "Cascadeur Principal",
+    "category": "Mise en scène",
+    "icon": "🤸",
+    "isDefault": true
+  },
+  {
+    "id": "casting",
+    "label": "Casting",
+    "category": "Casting",
+    "icon": "🎟️",
+    "isDefault": true
+  },
+  {
+    "id": "charge_de_communication",
+    "label": "Chargé de Communication",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "charge_de_production",
+    "label": "Chargé de Production",
+    "category": "Production",
+    "icon": "🏗️",
+    "isDefault": true
+  },
+  {
+    "id": "chauffeur",
+    "label": "Chauffeur",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_accessoiriste",
+    "label": "Chef Accessoiriste",
+    "category": "Décors",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "chef_bar",
+    "label": "Chef de Bar",
+    "category": "Restauration",
+    "icon": "🍽️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_coiffeur",
+    "label": "Chef Coiffeur",
+    "category": "HMC",
+    "icon": "💇",
+    "isDefault": true
+  },
+  {
+    "id": "chef_costumier",
+    "label": "Chef Costumier",
+    "category": "HMC",
+    "icon": "👔",
+    "isDefault": true
+  },
+  {
+    "id": "chef_cuisinier",
+    "label": "Chef Cuisinier",
+    "category": "Restauration",
+    "icon": "👨‍🍳",
+    "isDefault": true
+  },
+  {
+    "id": "chef_decorateur",
+    "label": "Chef Décorateur",
+    "category": "Décors",
+    "icon": "🏠",
+    "isDefault": true
+  },
+  {
+    "id": "chef_de_projet",
+    "label": "Chef de Projet",
+    "category": "Manager",
+    "icon": "🧑‍💼",
+    "isDefault": true
+  },
+  {
+    "id": "chef_de_rang",
+    "label": "Chef de Rang",
+    "category": "Restauration",
+    "icon": "🍽️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_de_securite",
+    "label": "Chef de Sécurité",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_de_car",
+    "label": "Chef de Car",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_dequipement",
+    "label": "Chef d'équipement",
+    "category": "Machinerie",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_electricien",
+    "label": "Chef Électricien",
+    "category": "Lumière",
+    "icon": "⚡",
+    "isDefault": true
+  },
+  {
+    "id": "chef_logistique",
+    "label": "Chef de Logistique",
+    "category": "Organisation",
+    "icon": "📦",
+    "isDefault": true
+  },
+  {
+    "id": "chef_lumiere",
+    "label": "Chef Lumière",
+    "category": "Lumière",
+    "icon": "💡",
+    "isDefault": true
+  },
+  {
+    "id": "chef_machiniste",
+    "label": "Chef Machiniste",
+    "category": "Machinerie",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_maquilleur",
+    "label": "Chef Maquilleur",
+    "category": "HMC",
+    "icon": "💄",
+    "isDefault": true
+  },
+  {
+    "id": "chef_monteur",
+    "label": "Chef monteur",
+    "category": "PostProduction",
+    "icon": "✂️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_operateur",
+    "label": "Chef Opérateur",
+    "category": "Vidéo",
+    "icon": "🎬",
+    "isDefault": true
+  },
+  {
+    "id": "chef_partie",
+    "label": "Chef de Partie",
+    "category": "Restauration",
+    "icon": "🍳",
+    "isDefault": true
+  },
+  {
+    "id": "chef_parking",
+    "label": "Chef de Parking",
+    "category": "Organisation",
+    "icon": "🅿️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_service",
+    "label": "Chef de Service",
+    "category": "Restauration",
+    "icon": "🍽️",
+    "isDefault": true
+  },
+  {
+    "id": "chef_son",
+    "label": "Chef Son",
+    "category": "Son",
+    "icon": "🎤",
+    "isDefault": true
+  },
+  {
+    "id": "chef_vente",
+    "label": "Chef de Vente",
+    "category": "Ventes",
+    "icon": "💰",
+    "isDefault": true
+  },
+  {
+    "id": "chef_video",
+    "label": "Chef Vidéo",
+    "category": "Vidéo",
+    "icon": "🎬",
+    "isDefault": true
+  },
+  {
+    "id": "chanteur",
+    "label": "Chanteur",
+    "category": "Mise en scène",
+    "icon": "🎤",
+    "isDefault": true
+  },
+  {
+    "id": "choregraphe",
+    "label": "Chorégraphe",
+    "category": "Mise en scène",
+    "icon": "💃",
+    "isDefault": true
+  },
+  {
+    "id": "coiffeur",
+    "label": "Coiffeur",
+    "category": "HMC",
+    "icon": "💄",
+    "isDefault": true
+  },
+  {
+    "id": "commis_cuisine",
+    "label": "Commis de Cuisine",
+    "category": "Restauration",
+    "icon": "🥘",
+    "isDefault": true
+  },
+  {
+    "id": "community_manager",
+    "label": "Community Manager",
+    "category": "Organisation",
+    "icon": "💻",
+    "isDefault": true
+  },
+  {
+    "id": "compositeur",
+    "label": "Compositeur",
+    "category": "Mise en scène",
+    "icon": "🎼",
+    "isDefault": true
+  },
+  {
+    "id": "conseiller_de_programmation",
+    "label": "Conseiller de Programmation",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "consignes",
+    "label": "Consignes",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "controle_dacces",
+    "label": "Contrôle d'Accès",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "coordinateur",
+    "label": "Coordinateur",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "coordinateur_artistique",
+    "label": "Coordinateur Artistique",
+    "category": "Organisation",
+    "icon": "🎨",
+    "isDefault": true
+  },
+  {
+    "id": "coordinateur_production",
+    "label": "Coordinateur de Production",
+    "category": "Production",
+    "icon": "🏗️",
+    "isDefault": true
+  },
+  {
+    "id": "coordinateur_securite",
+    "label": "Coordinateur Sécurité",
+    "category": "Organisation",
+    "icon": "🚨",
+    "isDefault": true
+  },
+  {
+    "id": "coordinateur_technique",
+    "label": "Coordinateur Technique",
+    "category": "Organisation",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "coordinateur_transport",
+    "label": "Coordinateur Transport",
+    "category": "Organisation",
+    "icon": "🚌",
+    "isDefault": true
+  },
+  {
+    "id": "culsinier_trateur",
+    "label": "Culsinier trateur",
+    "category": "Restauration",
+    "icon": "🍽️",
+    "isDefault": true
+  },
+  {
+    "id": "danseur",
+    "label": "Danseur",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "danseur_professionnel",
+    "label": "Danseur Professionnel",
+    "category": "Mise en scène",
+    "icon": "💃",
+    "isDefault": true
+  },
+  {
+    "id": "decorateur",
+    "label": "Décorateur",
+    "category": "Décors",
+    "icon": "🏠",
+    "isDefault": true
+  },
+  {
+    "id": "directeur",
+    "label": "Directeur",
+    "category": "Manager",
+    "icon": "🧑‍💼",
+    "isDefault": true
+  },
+  {
+    "id": "directeur_artistique",
+    "label": "Directeur Artistique",
+    "category": "Manager",
+    "icon": "🎨",
+    "isDefault": true
+  },
+  {
+    "id": "directeur_casting",
+    "label": "Directeur de Casting",
+    "category": "Manager",
+    "icon": "🎟️",
+    "isDefault": true
+  },
+  {
+    "id": "directeur_production",
+    "label": "Directeur de Production",
+    "category": "Manager",
+    "icon": "🏗️",
+    "isDefault": true
+  },
+  {
+    "id": "directeur_technique",
+    "label": "Directeur Technique",
+    "category": "Manager",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "droniste",
+    "label": "Droniste",
+    "category": "Vidéo",
+    "icon": "🎬",
+    "isDefault": true
+  },
+  {
+    "id": "eclairagiste",
+    "label": "Eclairagiste",
+    "category": "Lumière",
+    "icon": "💡",
+    "isDefault": true
+  },
+  {
+    "id": "electricien",
+    "label": "Electricien",
+    "category": "Lumière",
+    "icon": "💡",
+    "isDefault": true
+  },
+  {
+    "id": "etalonneur",
+    "label": "Etalonneur",
+    "category": "PostProduction",
+    "icon": "✂️",
+    "isDefault": true
+  },
+  {
+    "id": "etudiant",
+    "label": "Étudiant",
+    "category": "Autre",
+    "icon": "🧑‍🔧",
+    "isDefault": true
+  },
+  {
+    "id": "figurant",
+    "label": "Figurant",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "figurant_principal",
+    "label": "Figurant Principal",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "gestion_de_caisse",
+    "label": "Gestion de Caisse",
+    "category": "Ventes",
+    "icon": "💶",
+    "isDefault": true
+  },
+  {
+    "id": "habilleur",
+    "label": "Habilleur",
+    "category": "HMC",
+    "icon": "💄",
+    "isDefault": true
+  },
+  {
+    "id": "hotesse",
+    "label": "Hotesse",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "infirmier",
+    "label": "Infirmier/Infirmière",
+    "category": "Autre",
+    "icon": "🏥",
+    "isDefault": true
+  },
+  {
+    "id": "ingenieur_du_son",
+    "label": "Ingénieur du Son",
+    "category": "Son",
+    "icon": "🎤",
+    "isDefault": true
+  },
+  {
+    "id": "interprete",
+    "label": "Interprète",
+    "category": "Organisation",
+    "icon": "🗣️",
+    "isDefault": true
+  },
+  {
+    "id": "journaliste",
+    "label": "Journaliste",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "logisticien",
+    "label": "Logisticien",
+    "category": "Organisation",
+    "icon": "🚚",
+    "isDefault": true
+  },
+  {
+    "id": "machiniste",
+    "label": "Machiniste",
+    "category": "Machinerie",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "mannequin",
+    "label": "Mannequin",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "maquilleur",
+    "label": "Maquilleur",
+    "category": "HMC",
+    "icon": "💄",
+    "isDefault": true
+  },
+  {
+    "id": "medecin_plateau",
+    "label": "Médecin de Plateau",
+    "category": "Autre",
+    "icon": "👨‍⚕️",
+    "isDefault": true
+  },
+  {
+    "id": "mixeur",
+    "label": "Mixeur",
+    "category": "Son",
+    "icon": "🎤",
+    "isDefault": true
+  },
+  {
+    "id": "moderateur",
+    "label": "Modérateur",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "monteur",
+    "label": "Monteur",
+    "category": "PostProduction",
+    "icon": "✂️",
+    "isDefault": true
+  },
+  {
+    "id": "musicien",
+    "label": "Musicien",
+    "category": "Mise en scène",
+    "icon": "🎵",
+    "isDefault": true
+  },
+  {
+    "id": "organisateur",
+    "label": "Organisateur",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "perchman",
+    "label": "Perchman",
+    "category": "Son",
+    "icon": "🎤",
+    "isDefault": true
+  },
+  {
+    "id": "photographe",
+    "label": "Photographe",
+    "category": "Vidéo",
+    "icon": "🎬",
+    "isDefault": true
+  },
+  {
+    "id": "photographe_plateau",
+    "label": "Photographe de Plateau",
+    "category": "Vidéo",
+    "icon": "📸",
+    "isDefault": true
+  },
+  {
+    "id": "plongeur",
+    "label": "Plongeur",
+    "category": "Restauration",
+    "icon": "🍽️",
+    "isDefault": true
+  },
+  {
+    "id": "producteur",
+    "label": "Producteur",
+    "category": "Production",
+    "icon": "🏗️",
+    "isDefault": true
+  },
+  {
+    "id": "psychologue",
+    "label": "Psychologue",
+    "category": "Autre",
+    "icon": "🧠",
+    "isDefault": true
+  },
+  {
+    "id": "realisateur",
+    "label": "Réalisateur",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "regisseur_adjoint",
+    "label": "Régisseur Adjoint",
+    "category": "Organisation",
+    "icon": "📝",
+    "isDefault": true
+  },
+  {
+    "id": "responsable_boutique",
+    "label": "Responsable Boutique",
+    "category": "Ventes",
+    "icon": "🛍️",
+    "isDefault": true
+  },
+  {
+    "id": "retraite",
+    "label": "Retraité",
+    "category": "Autre",
+    "icon": "🧑‍🔧",
+    "isDefault": true
+  },
+  {
+    "id": "réglisseur_general",
+    "label": "Réglisseur Général",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "réglisseur_site",
+    "label": "Réglisseur Site",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "road",
+    "label": "Road",
+    "category": "Machinerie",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "runner",
+    "label": "Runner",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "scenariste",
+    "label": "Scénariste",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "scripte",
+    "label": "Scripte",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "serveur",
+    "label": "Serveur",
+    "category": "Restauration",
+    "icon": "🍽️",
+    "isDefault": true
+  },
+  {
+    "id": "speaker",
+    "label": "Speaker",
+    "category": "Mise en scène",
+    "icon": "🎭",
+    "isDefault": true
+  },
+  {
+    "id": "technicien",
+    "label": "Technicien",
+    "category": "Machinerie",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "technicien_lumiere",
+    "label": "Technicien Lumière",
+    "category": "Lumière",
+    "icon": "💡",
+    "isDefault": true
+  },
+  {
+    "id": "technicien_nodal",
+    "label": "Technicien Nodal",
+    "category": "Machinerie",
+    "icon": "🛠️",
+    "isDefault": true
+  },
+  {
+    "id": "technicien_son",
+    "label": "Technicien Son",
+    "category": "Son",
+    "icon": "🎤",
+    "isDefault": true
+  },
+  {
+    "id": "technicien_video",
+    "label": "Technicien Vidéo",
+    "category": "Vidéo",
+    "icon": "🎬",
+    "isDefault": true
+  },
+  {
+    "id": "traducteur",
+    "label": "Traducteur",
+    "category": "Organisation",
+    "icon": "🗂️",
+    "isDefault": true
+  },
+  {
+    "id": "vendeur_boutique",
+    "label": "Vendeur Boutique",
+    "category": "Ventes",
+    "icon": "💶",
+    "isDefault": true
+  },
+  {
+    "id": "vendeur_principal",
+    "label": "Vendeur Principal",
+    "category": "Ventes",
+    "icon": "💎",
+    "isDefault": true
+  },
+  {
+    "id": "vendeur_token",
+    "label": "Vendeur Token",
+    "category": "Ventes",
+    "icon": "💶",
+    "isDefault": true
+  },
+  {
+    "id": "videaste_making_of",
+    "label": "Vidéaste de Making-of",
+    "category": "Vidéo",
+    "icon": "🎥",
+    "isDefault": true
+  }
+]
