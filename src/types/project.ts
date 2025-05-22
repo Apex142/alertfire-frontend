@@ -1,7 +1,7 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from "firebase/firestore";
 
-export type ProjectStatus = 'Confirmé' | 'À confirmer' | 'Annulé' | 'Optionnel';
-export type ProjectPrivacy = 'public' | 'privé';
+export type ProjectStatus = "Confirmé" | "À confirmer" | "Annulé" | "Optionnel";
+export type ProjectPrivacy = "public" | "privé";
 
 export interface Project {
   id: string;
@@ -17,4 +17,4 @@ export interface Project {
   privacy: ProjectPrivacy;
   updatedAt: Timestamp;
   createdAt: Timestamp;
-} 
+}

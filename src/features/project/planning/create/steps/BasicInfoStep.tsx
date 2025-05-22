@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import SelectWithSearch from '@/components/ui/SelectWithSearch';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useProject } from '@/hooks/useProject';
-import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
-import type { EventFormData } from '../CreateEventForm';
-import type { Event } from '@/types/event';
-import type { Project } from '@/types/project';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import SelectWithSearch from "@/components/ui/SelectWithSearch";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useProject } from "@/hooks/useProject";
+import { useFirestoreDoc } from "@/hooks/useFirestoreDoc";
+import type { EventFormData } from "../CreateEventForm";
+import type { Event } from "@/types/event";
+import type { Project } from "@/types/project";
 
 interface EventType {
   code: string;
@@ -24,7 +24,12 @@ interface BasicInfoStepProps {
   projectId: string;
 }
 
-export default function BasicInfoStep({ data, updateData, onNext, projectId }: BasicInfoStepProps) {
+export default function BasicInfoStep({
+  data,
+  updateData,
+  onNext,
+  projectId,
+}: BasicInfoStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,14 +38,12 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
   const { data: project } = useProject(projectId, {
     cache: true,
     prefetch: {
-      related: [
-        { collection: 'events', field: 'projectId', value: projectId }
-      ]
-    }
+      related: [{ collection: "events", field: "projectId", value: projectId }],
+    },
   });
 
-  // Charger les événements du projet avec le cache
-  const { data: events } = useFirestoreDoc<Event[]>('events', projectId, {
+  // Charger les événements du project avec le cache
+  const { data: events } = useFirestoreDoc<Event[]>("events", projectId, {
     cache: true,
     cacheTTL: 5 * 60 * 1000, // 5 minutes
   });
@@ -48,18 +51,21 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
   useEffect(() => {
     const loadEventTypes = async () => {
       try {
-        const eventTypesRef = collection(db, 'event_types');
-        const q = query(eventTypesRef, orderBy('label'));
+        const eventTypesRef = collection(db, "event_types");
+        const q = query(eventTypesRef, orderBy("label"));
         const snapshot = await getDocs(q);
 
-        const types = snapshot.docs.map(doc => ({
+        const types = snapshot.docs.map((doc) => ({
           ...doc.data(),
           code: doc.id,
         })) as EventType[];
 
         setEventTypes(types);
       } catch (error) {
-        console.error('Erreur lors du chargement des types d\'événements:', error);
+        console.error(
+          "Erreur lors du chargement des types d'événements:",
+          error
+        );
       } finally {
         setIsLoading(false);
       }
@@ -72,7 +78,7 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
   useEffect(() => {
     if (project?.startDate && !data.date) {
       const startDate = new Date(project.startDate);
-      const formattedDate = startDate.toISOString().split('T')[0];
+      const formattedDate = startDate.toISOString().split("T")[0];
       updateData({ date: formattedDate });
     }
 
@@ -99,7 +105,7 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
 
       updateData({
         startTime,
-        endTime
+        endTime,
       });
     }
   }, [project, events, data.date, data.startTime, updateData]);
@@ -108,19 +114,19 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
     const newErrors: Record<string, string> = {};
 
     if (!data.title.trim()) {
-      newErrors.title = 'Le titre est requis';
+      newErrors.title = "Le titre est requis";
     }
     if (!data.eventType) {
-      newErrors.eventType = 'Le type d\'événement est requis';
+      newErrors.eventType = "Le type d'événement est requis";
     }
     if (!data.date) {
-      newErrors.date = 'La date est requise';
+      newErrors.date = "La date est requise";
     }
     if (!data.startTime) {
-      newErrors.startTime = 'L\'heure de début est requise';
+      newErrors.startTime = "L'heure de début est requise";
     }
     if (!data.endTime) {
-      newErrors.endTime = 'L\'heure de fin est requise';
+      newErrors.endTime = "L'heure de fin est requise";
     }
 
     // Validation des horaires
@@ -129,7 +135,7 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
       const end = new Date(`${data.date}T${data.endTime}`);
 
       if (end <= start) {
-        newErrors.endTime = 'L\'heure de fin doit être après l\'heure de début';
+        newErrors.endTime = "L'heure de fin doit être après l'heure de début";
       }
     }
 
@@ -146,14 +152,17 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
   return (
     <div className="space-y-6">
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="title"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Titre de l'événement
         </label>
         <Input
           id="title"
           value={data.title}
           onChange={(e) => updateData({ title: e.target.value })}
-          className={errors.title ? 'border-red-500' : ''}
+          className={errors.title ? "border-red-500" : ""}
           placeholder="Ex: Plénière Inaugurale"
         />
         {errors.title && (
@@ -162,21 +171,24 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
       </div>
 
       <div>
-        <label htmlFor="eventType" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="eventType"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Type d'événement
         </label>
         <SelectWithSearch
-          options={eventTypes.map(type => ({
+          options={eventTypes.map((type) => ({
             value: type.code,
             label: type.label,
             icon: type.icon,
-            color: type.color
+            color: type.color,
           }))}
           value={data.eventType}
           onChange={(value) => updateData({ eventType: value })}
           placeholder="Sélectionner un type d'événement"
           disabled={isLoading}
-          className={errors.eventType ? 'border-red-500' : ''}
+          className={errors.eventType ? "border-red-500" : ""}
         />
         {errors.eventType && (
           <p className="mt-1 text-sm text-red-500">{errors.eventType}</p>
@@ -184,7 +196,10 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
       </div>
 
       <div>
-        <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="date"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Date
         </label>
         <Input
@@ -192,7 +207,7 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
           type="date"
           value={data.date}
           onChange={(e) => updateData({ date: e.target.value })}
-          className={errors.date ? 'border-red-500' : ''}
+          className={errors.date ? "border-red-500" : ""}
         />
         {errors.date && (
           <p className="mt-1 text-sm text-red-500">{errors.date}</p>
@@ -201,7 +216,10 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="startTime"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Heure de début
           </label>
           <Input
@@ -209,7 +227,7 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
             type="time"
             value={data.startTime}
             onChange={(e) => updateData({ startTime: e.target.value })}
-            className={errors.startTime ? 'border-red-500' : ''}
+            className={errors.startTime ? "border-red-500" : ""}
           />
           {errors.startTime && (
             <p className="mt-1 text-sm text-red-500">{errors.startTime}</p>
@@ -217,7 +235,10 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
         </div>
 
         <div>
-          <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="endTime"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Heure de fin
           </label>
           <Input
@@ -225,7 +246,7 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
             type="time"
             value={data.endTime}
             onChange={(e) => updateData({ endTime: e.target.value })}
-            className={errors.endTime ? 'border-red-500' : ''}
+            className={errors.endTime ? "border-red-500" : ""}
           />
           {errors.endTime && (
             <p className="mt-1 text-sm text-red-500">{errors.endTime}</p>
@@ -240,4 +261,4 @@ export default function BasicInfoStep({ data, updateData, onNext, projectId }: B
       </div>
     </div>
   );
-} 
+}

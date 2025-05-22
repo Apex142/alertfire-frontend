@@ -1,12 +1,12 @@
 "use client";
 
-import { useActiveProject } from '@/stores/useActiveProjectStore';
-import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Button } from '@/components/ui/Button';
-import Modal from '@/components/ui/Modal';
-import AddLocationForm from '@/features/project/locations/AddLocationForm';
+import { useActiveProject } from "@/stores/useActiveProjectStore";
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Button } from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import AddLocationForm from "@/features/project/locations/AddLocationForm";
 
 interface Location {
   id: string;
@@ -32,7 +32,7 @@ export default function LocationsPage() {
         const locationsRef = collection(db, `projects/${project.id}/locations`);
         const querySnapshot = await getDocs(locationsRef);
 
-        const locationsData = querySnapshot.docs.map(doc => ({
+        const locationsData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate(),
@@ -41,7 +41,7 @@ export default function LocationsPage() {
 
         setLocations(locationsData);
       } catch (error) {
-        console.error('Erreur lors du chargement des lieux:', error);
+        console.error("Erreur lors du chargement des lieux:", error);
       } finally {
         setLoadingLocations(false);
       }
@@ -55,24 +55,19 @@ export default function LocationsPage() {
   }
 
   if (!project) {
-    return <div>Projet non trouvé</div>;
+    return <div>project non trouvé</div>;
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Lieux du projet</h1>
-        <Button onClick={() => setModalOpen(true)}>
-          Ajouter un lieu
-        </Button>
+        <h1 className="text-2xl font-bold">Lieux du project</h1>
+        <Button onClick={() => setModalOpen(true)}>Ajouter un lieu</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {locations.map((location) => (
-          <div
-            key={location.id}
-            className="bg-white rounded-lg shadow p-6"
-          >
+          <div key={location.id} className="bg-white rounded-lg shadow p-6">
             <h3 className="font-medium text-lg mb-2">{location.label}</h3>
             <p className="text-gray-600 mb-4">{location.address}</p>
             {location.notes && (
@@ -100,4 +95,4 @@ export default function LocationsPage() {
       </Modal>
     </div>
   );
-} 
+}

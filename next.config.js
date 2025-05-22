@@ -1,7 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true
+  swcMinify: true,
+  images: {
+    domains: [
+      "lh3.googleusercontent.com",
+      // tu peux ajouter d'autres domaines si besoin, ex:
+      // 'avatars.githubusercontent.com',
+    ],
+  },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

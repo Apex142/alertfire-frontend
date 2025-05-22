@@ -1,51 +1,65 @@
 "use client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { useAuth } from '@/hooks/useAuth';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useState } from 'react';
-import Image from 'next/image';
-import { notify } from '@/lib/notify';
-import { FirebaseError } from 'firebase/app';
+import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { useAuth } from "@/hooks/useAuth";
+import { notify } from "@/lib/notify";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FirebaseError } from "firebase/app";
+import Image from "next/image";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-const signupSchema = z.object({
-  email: z.string().email('Email invalide'),
-  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Les mots de passe ne correspondent pas",
-  path: ["confirmPassword"],
-});
+const signupSchema = z
+  .object({
+    email: z.string().email("Email invalide"),
+    password: z
+      .string()
+      .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirmPassword"],
+  });
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
 // Fonction pour traduire les erreurs Firebase
 const getFirebaseErrorMessage = (error: FirebaseError): string => {
+  console.error("Firebase Error:", error);
   switch (error.code) {
-    case 'auth/email-already-in-use':
-      return 'Cette adresse email est déjà utilisée. Veuillez vous connecter ou utiliser une autre adresse.';
-    case 'auth/invalid-email':
-      return 'L\'adresse email n\'est pas valide.';
-    case 'auth/operation-not-allowed':
-      return 'La création de compte est temporairement désactivée.';
-    case 'auth/weak-password':
-      return 'Le mot de passe est trop faible. Il doit contenir au moins 6 caractères.';
-    case 'auth/network-request-failed':
-      return 'Erreur de connexion réseau. Veuillez vérifier votre connexion internet.';
-    case 'auth/too-many-requests':
-      return 'Trop de tentatives. Veuillez réessayer plus tard.';
+    case "auth/email-already-in-use":
+      return "Cette adresse email est déjà utilisée. Veuillez vous connecter ou utiliser une autre adresse.";
+    case "auth/invalid-email":
+      return "L'adresse email n'est pas valide.";
+    case "auth/operation-not-allowed":
+      return "La création de compte est temporairement désactivée.";
+    case "auth/weak-password":
+      return "Le mot de passe est trop faible. Il doit contenir au moins 6 caractères.";
+    case "auth/network-request-failed":
+      return "Erreur de connexion réseau. Veuillez vérifier votre connexion internet.";
+    case "auth/too-many-requests":
+      return "Trop de tentatives. Veuillez réessayer plus tard.";
     default:
-      return 'Une erreur est survenue lors de la création du compte. Veuillez réessayer.';
+      return "Une erreur est survenue lors de la création du compte. Veuillez réessayer.";
   }
 };
 
-export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () => void }) {
+export default function SignupForm({
+  onSwitchToLogin,
+}: {
+  onSwitchToLogin?: () => void;
+}) {
   const { signUp, signInWithGoogle } = useAuth();
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const {
     register,
     handleSubmit,
@@ -56,35 +70,36 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
 
   const onSubmit = async (data: SignupFormData) => {
     try {
-      setError('');
+      setError("");
       await signUp(data.email, data.password);
-      notify.success('Inscription réussie !');
+      notify.success("Inscription réussie !");
     } catch (error) {
       if (error instanceof FirebaseError) {
         const errorMessage = getFirebaseErrorMessage(error);
         setError(errorMessage);
       } else {
-        const defaultError = 'Une erreur est survenue lors de la création du compte.';
+        const defaultError =
+          "Une erreur est survenue lors de la création du compte.";
         setError(defaultError);
       }
-      console.error('Erreur d\'inscription:', error);
+      console.error("Erreur d'inscription:", error);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      setError('');
+      setError("");
       await signInWithGoogle();
-      notify.success('Inscription Google réussie !');
+      notify.success("Inscription Google réussie !");
     } catch (error) {
       if (error instanceof FirebaseError) {
         const errorMessage = getFirebaseErrorMessage(error);
         setError(errorMessage);
       } else {
-        const defaultError = 'Erreur lors de la connexion avec Google.';
+        const defaultError = "Erreur lors de la connexion avec Google.";
         setError(defaultError);
       }
-      console.error('Erreur de connexion Google:', error);
+      console.error("Erreur de connexion Google:", error);
     }
   };
 
@@ -92,12 +107,15 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
     <Card className="w-full max-w-md">
       <CardHeader>
         <div className="flex justify-center mb-4">
-          <Image src="/images/ShowmateLogo_CARRE.png" alt="Logo Showmate" width={100} height={100} />
+          <Image
+            src="/images/ShowmateLogo_CARRE.png"
+            alt="Logo Showmate"
+            width={100}
+            height={100}
+          />
         </div>
         <CardTitle>Créer un compte</CardTitle>
-        <CardDescription>
-          Inscrivez-vous sur Showmate
-        </CardDescription>
+        <CardDescription>Inscrivez-vous sur Showmate</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -105,7 +123,7 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
             <Input
               type="email"
               placeholder="Email"
-              {...register('email')}
+              {...register("email")}
               error={errors.email?.message}
             />
           </div>
@@ -113,7 +131,7 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
             <Input
               type="password"
               placeholder="Mot de passe"
-              {...register('password')}
+              {...register("password")}
               error={errors.password?.message}
             />
           </div>
@@ -121,7 +139,7 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
             <Input
               type="password"
               placeholder="Confirmer le mot de passe"
-              {...register('confirmPassword')}
+              {...register("confirmPassword")}
               error={errors.confirmPassword?.message}
             />
           </div>
@@ -130,12 +148,8 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Inscription...' : 'S\'inscrire'}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Inscription..." : "S'inscrire"}
           </Button>
         </form>
 
@@ -178,7 +192,7 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
           </Button>
 
           <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-            Déjà un compte ?{' '}
+            Déjà un compte ?{" "}
             <button
               type="button"
               className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 underline"
@@ -191,4 +205,4 @@ export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () =
       </CardContent>
     </Card>
   );
-} 
+}

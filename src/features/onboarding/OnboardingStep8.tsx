@@ -1,12 +1,12 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-import confetti from 'canvas-confetti';
+import confetti from "canvas-confetti";
 import { useEffect, useState } from "react";
-import { db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
+import { db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 
 type Props = { onNext: () => void };
 
@@ -19,7 +19,7 @@ export default function OnboardingStep8({ onNext }: Props) {
     confetti({
       particleCount: 100,
       spread: 70,
-      origin: { y: 0.6 }
+      origin: { y: 0.6 },
     });
   };
 
@@ -30,12 +30,16 @@ export default function OnboardingStep8({ onNext }: Props) {
 
   const handleNext = async () => {
     if (user) {
-      await setDoc(doc(db, 'users', user.uid), {
-        onboardingStep: 9,
-        onboardingCompleted: true
-      }, { merge: true });
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          onboardingStep: 9,
+          onboardingCompleted: true,
+        },
+        { merge: true }
+      );
     }
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   // Décrémenter le countdown chaque seconde
@@ -82,7 +86,8 @@ export default function OnboardingStep8({ onNext }: Props) {
           transition={{ delay: 0.4 }}
           className="text-3xl font-bold mb-6 text-primary"
         >
-          🎉 Félicitations {user?.displayName || user?.email?.split('@')[0] || ''} !
+          🎉 Félicitations{" "}
+          {user?.displayName || user?.email?.split("@")[0] || ""} !
         </motion.h2>
 
         <motion.div
@@ -92,20 +97,25 @@ export default function OnboardingStep8({ onNext }: Props) {
           className="mx-auto max-w-prose space-y-4"
         >
           <p className="text-gray-700 text-lg">
-            Ton profil est maintenant prêt ! Tu fais partie de la communauté Showmate.
+            Ton profil est maintenant prêt ! Tu fais partie de la communauté
+            Showmate.
           </p>
 
           <div className="bg-primary/5 rounded-xl p-4 mt-6">
-            <h3 className="font-semibold text-primary mb-3">Prochaines étapes :</h3>
+            <h3 className="font-semibold text-primary mb-3">
+              Prochaines étapes :
+            </h3>
             <ul className="text-left space-y-2 text-gray-600">
               <li className="flex items-center">
                 <span className="mr-2">📱</span> Explore ton tableau de bord
               </li>
               <li className="flex items-center">
-                <span className="mr-2">👥</span> Rejoins ou crée ton premier projet
+                <span className="mr-2">👥</span> Rejoins ou crée ton premier
+                project
               </li>
               <li className="flex items-center">
-                <span className="mr-2">⚡</span> Découvre les toutes les fonctionnalités
+                <span className="mr-2">⚡</span> Découvre les toutes les
+                fonctionnalités
               </li>
             </ul>
           </div>
@@ -128,4 +138,4 @@ export default function OnboardingStep8({ onNext }: Props) {
       </motion.div>
     </div>
   );
-} 
+}

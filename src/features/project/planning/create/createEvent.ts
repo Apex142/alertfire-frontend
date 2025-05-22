@@ -1,5 +1,5 @@
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface EventMember {
   userId: string;
@@ -23,7 +23,7 @@ interface CreateEventData {
 // Fonction fictive pour la notification des membres
 const notifyUsers = (members: EventMember[]) => {
   if (members.length > 0) {
-    console.log('Notification envoyée aux membres:', members);
+    console.log("Notification envoyée aux membres:", members);
   }
 };
 
@@ -51,7 +51,10 @@ export const createEvent = async (data: CreateEventData): Promise<string> => {
     };
 
     // Ajouter l'événement dans Firestore
-    await setDoc(doc(db, `projects/${data.projectId}/events/${eventId}`), eventData);
+    await setDoc(
+      doc(db, `projects/${data.projectId}/events/${eventId}`),
+      eventData
+    );
 
     // Si un nouveau lieu est créé, l'ajouter à la collection des lieux
     if (data.locationLabel && data.locationAddress) {
@@ -65,14 +68,23 @@ export const createEvent = async (data: CreateEventData): Promise<string> => {
       };
 
       // Créer le lieu dans la collection globale
-      await setDoc(doc(db, 'locations', data.locationId), locationData);
+      await setDoc(doc(db, "locations", data.locationId), locationData);
 
-      // Créer la référence du lieu dans le projet
-      await setDoc(doc(db, 'projects', data.projectId, 'projectLocations', data.locationId), {
-        locationId: data.locationId,
-        addedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      // Créer la référence du lieu dans le project
+      await setDoc(
+        doc(
+          db,
+          "projects",
+          data.projectId,
+          "projectLocations",
+          data.locationId
+        ),
+        {
+          locationId: data.locationId,
+          addedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }
+      );
     }
 
     // Notifier les membres si demandé et s'il y en a
@@ -82,7 +94,7 @@ export const createEvent = async (data: CreateEventData): Promise<string> => {
 
     return eventId;
   } catch (error) {
-    console.error('Erreur lors de la création de l\'événement:', error);
-    throw new Error('Impossible de créer l\'événement');
+    console.error("Erreur lors de la création de l'événement:", error);
+    throw new Error("Impossible de créer l'événement");
   }
-}; 
+};

@@ -1,17 +1,22 @@
-'use client';
+"use client";
 
-import { ThemeProvider } from 'next-themes';
-import { createContext, useContext, ReactNode } from 'react';
-import { useUserData } from '@/hooks/useUserData';
-import { Loading } from '@/components/ui/Loading';
+import { Loading } from "@/components/ui/Loading";
+import { ModalProvider } from "@/components/ui/modal/ModalContext";
+import { useUserData } from "@/hooks/useUserData";
+import { ThemeProvider } from "next-themes";
+import { createContext, ReactNode, useContext } from "react";
 
 // Contexte pour les données utilisateur
-export const UserDataContext = createContext<ReturnType<typeof useUserData> | null>(null);
+export const UserDataContext = createContext<ReturnType<
+  typeof useUserData
+> | null>(null);
 
 export function useUserDataContext() {
   const context = useContext(UserDataContext);
   if (!context) {
-    throw new Error('useUserDataContext doit être utilisé dans un UserDataProvider');
+    throw new Error(
+      "useUserDataContext doit être utilisé dans un UserDataProvider"
+    );
   }
   return context;
 }
@@ -55,10 +60,10 @@ function UserDataProvider({ children }: { children: ReactNode }) {
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <UserDataProvider>
-        {children}
-      </UserDataProvider>
-    </ThemeProvider>
+    <ModalProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <UserDataProvider>{children}</UserDataProvider>
+      </ThemeProvider>
+    </ModalProvider>
   );
-} 
+}

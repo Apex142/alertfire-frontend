@@ -6,7 +6,7 @@ alwaysApply: false
 # 🧭 Coding Rules – Showmate (Cursor Project)
 
 ## 🔤 Langage
-- Utiliser **TypeScript** pour tout le projet.
+- Utiliser **TypeScript** pour tout le project.
 - Ne jamais utiliser `any` sauf cas exceptionnel commenté.
 - Typage strict des props, fonctions, Firestore data.
 

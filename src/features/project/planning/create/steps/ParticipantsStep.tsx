@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { EventFormData } from '../CreateEventForm';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { EventFormData } from "../CreateEventForm";
 
 interface ProjectMember {
   id: string;
@@ -14,7 +14,7 @@ interface ProjectMember {
   email: string;
   phone?: string;
   photo_url?: string;
-  status: 'approved' | 'pending';
+  status: "approved" | "pending";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,25 +32,31 @@ interface ParticipantsStepProps {
   projectId: string;
 }
 
-export default function ParticipantsStep({ data, updateData, onNext, onBack, projectId }: ParticipantsStepProps) {
+export default function ParticipantsStep({
+  data,
+  updateData,
+  onNext,
+  onBack,
+  projectId,
+}: ParticipantsStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Charger les membres du projet
+  // Charger les membres du project
   useEffect(() => {
     const loadMembers = async () => {
       try {
         setLoading(true);
-        const membershipsRef = collection(db, 'project_memberships');
+        const membershipsRef = collection(db, "project_memberships");
         const q = query(
           membershipsRef,
-          where('projectId', '==', projectId),
-          where('status', '==', 'approved')
+          where("projectId", "==", projectId),
+          where("status", "==", "approved")
         );
         const querySnapshot = await getDocs(q);
 
-        const membersData = querySnapshot.docs.map(doc => ({
+        const membersData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate(),
@@ -59,7 +65,7 @@ export default function ParticipantsStep({ data, updateData, onNext, onBack, pro
 
         setMembers(membersData);
       } catch (error) {
-        console.error('Erreur lors du chargement des membres:', error);
+        console.error("Erreur lors du chargement des membres:", error);
       } finally {
         setLoading(false);
       }
@@ -88,17 +94,17 @@ export default function ParticipantsStep({ data, updateData, onNext, onBack, pro
 
   const toggleMember = (member: ProjectMember) => {
     const currentMembers = data.members || [];
-    const memberExists = currentMembers.some(m => m.userId === member.userId);
+    const memberExists = currentMembers.some((m) => m.userId === member.userId);
 
     const newMembers = memberExists
-      ? currentMembers.filter(m => m.userId !== member.userId)
+      ? currentMembers.filter((m) => m.userId !== member.userId)
       : [...currentMembers, { userId: member.userId, role: member.role }];
 
     updateData({ members: newMembers });
   };
 
   const isMemberAssigned = (member: ProjectMember) => {
-    return (data.members || []).some(m => m.userId === member.userId);
+    return (data.members || []).some((m) => m.userId === member.userId);
   };
 
   if (loading) {
@@ -116,12 +122,14 @@ export default function ParticipantsStep({ data, updateData, onNext, onBack, pro
           Sélectionner les participants (optionnel)
         </label>
         <div className="border rounded-lg divide-y">
-          {members.map(member => {
+          {members.map((member) => {
             const isAssigned = isMemberAssigned(member);
             return (
               <div
                 key={member.id}
-                className={`flex items-center p-4 hover:bg-gray-50 ${isAssigned ? 'bg-gray-50' : ''}`}
+                className={`flex items-center p-4 hover:bg-gray-50 ${
+                  isAssigned ? "bg-gray-50" : ""
+                }`}
               >
                 <div className="flex items-center flex-1">
                   <div className="flex-shrink-0">
@@ -132,20 +140,35 @@ export default function ParticipantsStep({ data, updateData, onNext, onBack, pro
                         className="w-10 h-10 rounded-full"
                       />
                     ) : (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isAssigned ? 'bg-gray-300' : 'bg-gray-200'
-                        }`}>
-                        <span className={`text-sm font-medium ${isAssigned ? 'text-gray-500' : 'text-gray-600'
-                          }`}>
-                          {member.firstname[0]}{member.lastname[0]}
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isAssigned ? "bg-gray-300" : "bg-gray-200"
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            isAssigned ? "text-gray-500" : "text-gray-600"
+                          }`}
+                        >
+                          {member.firstname[0]}
+                          {member.lastname[0]}
                         </span>
                       </div>
                     )}
                   </div>
                   <div className="ml-3">
-                    <div className={`font-medium ${isAssigned ? 'text-gray-500' : ''}`}>
+                    <div
+                      className={`font-medium ${
+                        isAssigned ? "text-gray-500" : ""
+                      }`}
+                    >
                       {member.firstname} {member.lastname}
                     </div>
-                    <div className={`text-sm ${isAssigned ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <div
+                      className={`text-sm ${
+                        isAssigned ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       {member.role}
                     </div>
                   </div>
@@ -172,19 +195,13 @@ export default function ParticipantsStep({ data, updateData, onNext, onBack, pro
       </div>
 
       <div className="flex justify-between pt-4">
-        <Button
-          variant="outline"
-          onClick={onBack}
-        >
+        <Button variant="outline" onClick={onBack}>
           Retour
         </Button>
-        <Button
-          variant="primary"
-          onClick={handleNext}
-        >
+        <Button variant="primary" onClick={handleNext}>
           Suivant
         </Button>
       </div>
     </div>
   );
-} 
+}

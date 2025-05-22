@@ -1,13 +1,13 @@
-'use client';
-import { Layout } from '@/components/LayoutLogged';
-import ProjectSidebar from '@/components/project/ProjectMenuSidebar';
-import React from 'react';
-import { ProjectProvider, useProjectContext } from './providers';
-import { Timestamp } from 'firebase/firestore';
+"use client";
+import { Layout } from "@/components/LayoutLogged";
+import ProjectSidebar from "@/components/project/ProjectMenuSidebar";
+import { Timestamp } from "firebase/firestore";
+import React from "react";
+import { ProjectProvider, useProjectContext } from "./providers";
 
 function formatDate(date?: Date | string | Timestamp): string | undefined {
   if (!date) return undefined;
-  
+
   let dateObj: Date;
   if (date instanceof Timestamp) {
     dateObj = date.toDate();
@@ -18,11 +18,11 @@ function formatDate(date?: Date | string | Timestamp): string | undefined {
   }
 
   if (isNaN(dateObj.getTime())) return undefined;
-  
-  return dateObj.toLocaleDateString('fr-FR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+
+  return dateObj.toLocaleDateString("fr-FR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
@@ -31,6 +31,8 @@ function ProjectContent({ children }: { children: React.ReactNode }) {
 
   if (!project) return null;
 
+  const NAVBAR_HEIGHT = 75; // px (hauteur navbar top)
+
   return (
     <div className="flex min-h-full">
       <ProjectSidebar
@@ -38,20 +40,32 @@ function ProjectContent({ children }: { children: React.ReactNode }) {
         startDate={formatDate(project.startDate)}
         endDate={formatDate(project.endDate)}
       />
-      <div className="flex-1 px-4 py-8">
+      {/* Main content */}
+      <div
+        className="
+          flex-1
+          px-3
+          py-16
+          md:py-0
+        "
+      >
         {children}
       </div>
     </div>
   );
 }
 
-function ProjectLayoutClient({ projectId, children }: { projectId: string; children: React.ReactNode }) {
+function ProjectLayoutClient({
+  projectId,
+  children,
+}: {
+  projectId: string;
+  children: React.ReactNode;
+}) {
   return (
     <Layout>
       <ProjectProvider projectId={projectId}>
-        <ProjectContent>
-          {children}
-        </ProjectContent>
+        <ProjectContent>{children}</ProjectContent>
       </ProjectProvider>
     </Layout>
   );
@@ -59,11 +73,11 @@ function ProjectLayoutClient({ projectId, children }: { projectId: string; child
 
 export default function ProjectLayout({
   children,
-  params
+  params,
 }: {
   children: React.ReactNode;
   params: Promise<{ id: string }>;
 }) {
   const { id } = React.use(params);
   return <ProjectLayoutClient projectId={id}>{children}</ProjectLayoutClient>;
-} 
+}

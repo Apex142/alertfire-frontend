@@ -10,19 +10,24 @@ import {
   where,
   Timestamp,
   serverTimestamp,
-  FirestoreError
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Location, ProjectLocation, EditPolicy, LocationModification } from '@/types/location';
+  FirestoreError,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
+  Location,
+  ProjectLocation,
+  EditPolicy,
+  LocationModification,
+} from "@/types/location";
 
 // Codes d'erreur spécifiques
 export enum LocationErrorCode {
-  VALIDATION_ERROR = 'LOCATION_VALIDATION_ERROR',
-  NOT_FOUND = 'LOCATION_NOT_FOUND',
-  PERMISSION_DENIED = 'LOCATION_PERMISSION_DENIED',
-  SERVER_ERROR = 'LOCATION_SERVER_ERROR',
-  NETWORK_ERROR = 'LOCATION_NETWORK_ERROR',
-  INVALID_DATA = 'LOCATION_INVALID_DATA'
+  VALIDATION_ERROR = "LOCATION_VALIDATION_ERROR",
+  NOT_FOUND = "LOCATION_NOT_FOUND",
+  PERMISSION_DENIED = "LOCATION_PERMISSION_DENIED",
+  SERVER_ERROR = "LOCATION_SERVER_ERROR",
+  NETWORK_ERROR = "LOCATION_NETWORK_ERROR",
+  INVALID_DATA = "LOCATION_INVALID_DATA",
 }
 
 interface CreateLocationDTO {
@@ -49,39 +54,39 @@ class LocationServiceError extends Error {
     public details?: any
   ) {
     super(message);
-    this.name = 'LocationServiceError';
+    this.name = "LocationServiceError";
   }
 }
 
 const handleFirestoreError = (error: FirestoreError): LocationServiceError => {
   switch (error.code) {
-    case 'permission-denied':
+    case "permission-denied":
       return new LocationServiceError(
-        'Vous n\'avez pas les permissions nécessaires pour effectuer cette action',
+        "Vous n'avez pas les permissions nécessaires pour effectuer cette action",
         LocationErrorCode.PERMISSION_DENIED,
         error
       );
-    case 'not-found':
+    case "not-found":
       return new LocationServiceError(
-        'La ressource demandée n\'existe pas',
+        "La ressource demandée n'existe pas",
         LocationErrorCode.NOT_FOUND,
         error
       );
-    case 'unavailable':
+    case "unavailable":
       return new LocationServiceError(
-        'Le service est temporairement indisponible',
+        "Le service est temporairement indisponible",
         LocationErrorCode.NETWORK_ERROR,
         error
       );
-    case 'invalid-argument':
+    case "invalid-argument":
       return new LocationServiceError(
-        'Les données fournies sont invalides',
+        "Les données fournies sont invalides",
         LocationErrorCode.INVALID_DATA,
         error
       );
     default:
       return new LocationServiceError(
-        'Une erreur serveur est survenue',
+        "Une erreur serveur est survenue",
         LocationErrorCode.SERVER_ERROR,
         error
       );
@@ -96,7 +101,7 @@ const convertFirestoreTimestamps = (data: any): any => {
   for (const [key, value] of Object.entries(data)) {
     if (value instanceof Timestamp) {
       result[key] = value.toDate();
-    } else if (value && typeof value === 'object') {
+    } else if (value && typeof value === "object") {
       result[key] = convertFirestoreTimestamps(value);
     }
   }
@@ -109,25 +114,25 @@ export const locationService = {
     try {
       if (!data.label?.trim()) {
         throw new LocationServiceError(
-          'Le nom du lieu est requis',
+          "Le nom du lieu est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
       if (!data.address?.trim()) {
         throw new LocationServiceError(
-          'L\'adresse du lieu est requise',
+          "L'adresse du lieu est requise",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
       if (!data.createdBy) {
         throw new LocationServiceError(
-          'L\'identifiant de l\'utilisateur est requis',
+          "L'identifiant de l'utilisateur est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
-      if (!['creativecommon', 'company', 'private'].includes(data.editPolicy)) {
+      if (!["creativecommon", "company", "private"].includes(data.editPolicy)) {
         throw new LocationServiceError(
-          'La politique d\'édition est invalide',
+          "La politique d'édition est invalide",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
@@ -136,7 +141,7 @@ export const locationService = {
         throw error;
       }
       throw new LocationServiceError(
-        'Erreur de validation des données',
+        "Erreur de validation des données",
         LocationErrorCode.VALIDATION_ERROR,
         error
       );
@@ -147,13 +152,13 @@ export const locationService = {
     try {
       if (!data.label?.trim()) {
         throw new LocationServiceError(
-          'Le nom du lieu est requis',
+          "Le nom du lieu est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
       if (!data.address?.trim()) {
         throw new LocationServiceError(
-          'L\'adresse du lieu est requise',
+          "L'adresse du lieu est requise",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
@@ -162,7 +167,7 @@ export const locationService = {
         throw error;
       }
       throw new LocationServiceError(
-        'Erreur de validation des données du projet',
+        "Erreur de validation des données du project",
         LocationErrorCode.VALIDATION_ERROR,
         error
       );
@@ -172,9 +177,9 @@ export const locationService = {
   // Créer un nouveau lieu global
   async createLocation(data: CreateLocationDTO): Promise<string> {
     try {
-      console.log('Début de la création du lieu:', data);
+      console.log("Début de la création du lieu:", data);
       this.validateLocationData(data);
-      console.log('Validation des données réussie');
+      console.log("Validation des données réussie");
 
       // Extraire les propriétés requises
       const { label, address, createdBy, editPolicy } = data;
@@ -183,10 +188,10 @@ export const locationService = {
       const optionalData = {
         notes: data.notes || undefined,
         companyId: data.companyId || undefined,
-        isPublic: data.isPublic ?? false
+        isPublic: data.isPublic ?? false,
       };
 
-      const locationData: Omit<Location, 'id'> = {
+      const locationData: Omit<Location, "id"> = {
         label,
         address,
         createdBy,
@@ -197,20 +202,20 @@ export const locationService = {
         updatedAt: serverTimestamp() as Timestamp,
         version: 1,
         modificationHistory: [],
-        pendingModifications: []
+        pendingModifications: [],
       };
-      console.log('Données du lieu préparées:', locationData);
+      console.log("Données du lieu préparées:", locationData);
 
       // Filtrer les valeurs undefined avant d'envoyer à Firestore
       const firestoreData = Object.fromEntries(
         Object.entries(locationData).filter(([_, value]) => value !== undefined)
       );
 
-      const docRef = await addDoc(collection(db, 'locations'), firestoreData);
-      console.log('Lieu créé avec succès, ID:', docRef.id);
+      const docRef = await addDoc(collection(db, "locations"), firestoreData);
+      console.log("Lieu créé avec succès, ID:", docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('Erreur détaillée lors de la création du lieu:', error);
+      console.error("Erreur détaillée lors de la création du lieu:", error);
       if (error instanceof LocationServiceError) {
         throw error;
       }
@@ -218,45 +223,57 @@ export const locationService = {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur inattendue est survenue lors de la création du lieu',
+        "Une erreur inattendue est survenue lors de la création du lieu",
         LocationErrorCode.SERVER_ERROR,
         error
       );
     }
   },
 
-  // Créer un lieu dans un projet
-  async createProjectLocation(projectId: string, data: CreateProjectLocationDTO): Promise<string> {
+  // Créer un lieu dans un project
+  async createProjectLocation(
+    projectId: string,
+    data: CreateProjectLocationDTO
+  ): Promise<string> {
     try {
-      console.log('Début de la création du lieu dans le projet:', { projectId, data });
+      console.log("Début de la création du lieu dans le project:", {
+        projectId,
+        data,
+      });
       if (!projectId) {
         throw new LocationServiceError(
-          'L\'identifiant du projet est requis',
+          "L'identifiant du project est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
 
       this.validateProjectLocationData(data);
-      console.log('Validation des données du projet réussie');
+      console.log("Validation des données du project réussie");
 
-      const locationData: Omit<ProjectLocation, 'id'> = {
+      const locationData: Omit<ProjectLocation, "id"> = {
         ...data,
         createdAt: serverTimestamp() as Timestamp,
-        updatedAt: serverTimestamp() as Timestamp
+        updatedAt: serverTimestamp() as Timestamp,
       };
-      console.log('Données du lieu de projet préparées:', locationData);
+      console.log("Données du lieu de project préparées:", locationData);
 
       // Filtrer les valeurs undefined avant d'envoyer à Firestore
       const firestoreData = Object.fromEntries(
         Object.entries(locationData).filter(([_, value]) => value !== undefined)
       );
-      console.log('Données filtrées pour Firestore:', firestoreData);
+      console.log("Données filtrées pour Firestore:", firestoreData);
 
-      const docRef = await addDoc(collection(db, `projects/${projectId}/locations`), firestoreData);
-      console.log('Lieu créé dans le projet avec succès, ID:', docRef.id);
+      const docRef = await addDoc(
+        collection(db, `projects/${projectId}/locations`),
+        firestoreData
+      );
+      console.log("Lieu créé dans le project avec succès, ID:", docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('Erreur détaillée lors de la création du lieu dans le projet:', error);
+      console.error(
+        "Erreur détaillée lors de la création du lieu dans le project:",
+        error
+      );
       if (error instanceof LocationServiceError) {
         throw error;
       }
@@ -264,7 +281,7 @@ export const locationService = {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur inattendue est survenue lors de la création du lieu dans le projet',
+        "Une erreur inattendue est survenue lors de la création du lieu dans le project",
         LocationErrorCode.SERVER_ERROR,
         error
       );
@@ -276,12 +293,12 @@ export const locationService = {
     try {
       if (!locationId) {
         throw new LocationServiceError(
-          'L\'identifiant du lieu est requis',
+          "L'identifiant du lieu est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
 
-      const docRef = doc(db, 'locations', locationId);
+      const docRef = doc(db, "locations", locationId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -290,26 +307,29 @@ export const locationService = {
 
       return convertFirestoreTimestamps({
         id: docSnap.id,
-        ...docSnap.data()
+        ...docSnap.data(),
       }) as Location;
     } catch (error) {
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la récupération du lieu',
+        "Une erreur est survenue lors de la récupération du lieu",
         LocationErrorCode.SERVER_ERROR,
         error
       );
     }
   },
 
-  // Récupérer un lieu de projet par son ID
-  async getProjectLocationById(projectId: string, locationId: string): Promise<ProjectLocation | null> {
+  // Récupérer un lieu de project par son ID
+  async getProjectLocationById(
+    projectId: string,
+    locationId: string
+  ): Promise<ProjectLocation | null> {
     try {
       if (!projectId || !locationId) {
         throw new LocationServiceError(
-          'Les identifiants du projet et du lieu sont requis',
+          "Les identifiants du project et du lieu sont requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
@@ -323,26 +343,26 @@ export const locationService = {
 
       return convertFirestoreTimestamps({
         id: docSnap.id,
-        ...docSnap.data()
+        ...docSnap.data(),
       }) as ProjectLocation;
     } catch (error) {
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la récupération du lieu du projet',
+        "Une erreur est survenue lors de la récupération du lieu du project",
         LocationErrorCode.SERVER_ERROR,
         error
       );
     }
   },
 
-  // Récupérer tous les lieux d'un projet
+  // Récupérer tous les lieux d'un project
   async getProjectLocations(projectId: string): Promise<ProjectLocation[]> {
     try {
       if (!projectId) {
         throw new LocationServiceError(
-          'L\'identifiant du projet est requis',
+          "L'identifiant du project est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
@@ -350,16 +370,18 @@ export const locationService = {
       const locationsRef = collection(db, `projects/${projectId}/locations`);
       const querySnapshot = await getDocs(locationsRef);
 
-      return querySnapshot.docs.map(doc => convertFirestoreTimestamps({
-        id: doc.id,
-        ...doc.data()
-      })) as ProjectLocation[];
+      return querySnapshot.docs.map((doc) =>
+        convertFirestoreTimestamps({
+          id: doc.id,
+          ...doc.data(),
+        })
+      ) as ProjectLocation[];
     } catch (error) {
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la récupération des lieux du projet',
+        "Une erreur est survenue lors de la récupération des lieux du project",
         LocationErrorCode.SERVER_ERROR,
         error
       );
@@ -370,23 +392,25 @@ export const locationService = {
   async getPublicLocations(): Promise<Location[]> {
     try {
       const q = query(
-        collection(db, 'locations'),
-        where('isPublic', '==', true),
-        where('isLegit', '==', true)
+        collection(db, "locations"),
+        where("isPublic", "==", true),
+        where("isLegit", "==", true)
       );
 
       const querySnapshot = await getDocs(q);
 
-      return querySnapshot.docs.map(doc => convertFirestoreTimestamps({
-        id: doc.id,
-        ...doc.data()
-      })) as Location[];
+      return querySnapshot.docs.map((doc) =>
+        convertFirestoreTimestamps({
+          id: doc.id,
+          ...doc.data(),
+        })
+      ) as Location[];
     } catch (error) {
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la récupération des lieux publics',
+        "Une erreur est survenue lors de la récupération des lieux publics",
         LocationErrorCode.SERVER_ERROR,
         error
       );
@@ -396,39 +420,43 @@ export const locationService = {
   // Récupérer les lieux d'une entreprise
   async getCompanyLocations(companyId: string): Promise<Location[]> {
     try {
-      console.log('Début getCompanyLocations avec companyId:', companyId);
+      console.log("Début getCompanyLocations avec companyId:", companyId);
 
       if (!companyId) {
         throw new LocationServiceError(
-          'L\'identifiant de l\'entreprise est requis',
+          "L'identifiant de l'entreprise est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
 
       const q = query(
-        collection(db, 'locations'),
-        where('companyId', '==', companyId)
+        collection(db, "locations"),
+        where("companyId", "==", companyId)
       );
-      console.log('Query Firestore construite:', q);
+      console.log("Query Firestore construite:", q);
 
       const querySnapshot = await getDocs(q);
-      console.log('Résultats de la requête:', {
+      console.log("Résultats de la requête:", {
         empty: querySnapshot.empty,
         size: querySnapshot.size,
-        docs: querySnapshot.docs.map(doc => convertFirestoreTimestamps({ id: doc.id, ...doc.data() }))
+        docs: querySnapshot.docs.map((doc) =>
+          convertFirestoreTimestamps({ id: doc.id, ...doc.data() })
+        ),
       });
 
-      return querySnapshot.docs.map(doc => convertFirestoreTimestamps({
-        id: doc.id,
-        ...doc.data()
-      })) as Location[];
+      return querySnapshot.docs.map((doc) =>
+        convertFirestoreTimestamps({
+          id: doc.id,
+          ...doc.data(),
+        })
+      ) as Location[];
     } catch (error) {
-      console.error('Erreur détaillée dans getCompanyLocations:', error);
+      console.error("Erreur détaillée dans getCompanyLocations:", error);
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la récupération des lieux de l\'entreprise',
+        "Une erreur est survenue lors de la récupération des lieux de l'entreprise",
         LocationErrorCode.SERVER_ERROR,
         error
       );
@@ -436,34 +464,37 @@ export const locationService = {
   },
 
   // Mettre à jour un lieu global
-  async updateLocation(locationId: string, data: Partial<Location>): Promise<void> {
+  async updateLocation(
+    locationId: string,
+    data: Partial<Location>
+  ): Promise<void> {
     try {
       if (!locationId) {
         throw new LocationServiceError(
-          'L\'identifiant du lieu est requis',
+          "L'identifiant du lieu est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
 
-      const docRef = doc(db, 'locations', locationId);
+      const docRef = doc(db, "locations", locationId);
       await updateDoc(docRef, {
         ...data,
         updatedAt: serverTimestamp(),
-        version: data.version ? data.version + 1 : 1
+        version: data.version ? data.version + 1 : 1,
       });
     } catch (error) {
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la mise à jour du lieu',
+        "Une erreur est survenue lors de la mise à jour du lieu",
         LocationErrorCode.SERVER_ERROR,
         error
       );
     }
   },
 
-  // Mettre à jour un lieu de projet
+  // Mettre à jour un lieu de project
   async updateProjectLocation(
     projectId: string,
     locationId: string,
@@ -472,7 +503,7 @@ export const locationService = {
     try {
       if (!projectId || !locationId) {
         throw new LocationServiceError(
-          'Les identifiants du projet et du lieu sont requis',
+          "Les identifiants du project et du lieu sont requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
@@ -480,14 +511,14 @@ export const locationService = {
       const docRef = doc(db, `projects/${projectId}/locations`, locationId);
       await updateDoc(docRef, {
         ...data,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
     } catch (error) {
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la mise à jour du lieu du projet',
+        "Une erreur est survenue lors de la mise à jour du lieu du project",
         LocationErrorCode.SERVER_ERROR,
         error
       );
@@ -499,30 +530,33 @@ export const locationService = {
     try {
       if (!locationId) {
         throw new LocationServiceError(
-          'L\'identifiant du lieu est requis',
+          "L'identifiant du lieu est requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
 
-      await deleteDoc(doc(db, 'locations', locationId));
+      await deleteDoc(doc(db, "locations", locationId));
     } catch (error) {
       if (error instanceof FirestoreError) {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la suppression du lieu',
+        "Une erreur est survenue lors de la suppression du lieu",
         LocationErrorCode.SERVER_ERROR,
         error
       );
     }
   },
 
-  // Supprimer un lieu de projet
-  async deleteProjectLocation(projectId: string, locationId: string): Promise<void> {
+  // Supprimer un lieu de project
+  async deleteProjectLocation(
+    projectId: string,
+    locationId: string
+  ): Promise<void> {
     try {
       if (!projectId || !locationId) {
         throw new LocationServiceError(
-          'Les identifiants du projet et du lieu sont requis',
+          "Les identifiants du project et du lieu sont requis",
           LocationErrorCode.VALIDATION_ERROR
         );
       }
@@ -533,10 +567,10 @@ export const locationService = {
         throw handleFirestoreError(error);
       }
       throw new LocationServiceError(
-        'Une erreur est survenue lors de la suppression du lieu du projet',
+        "Une erreur est survenue lors de la suppression du lieu du project",
         LocationErrorCode.SERVER_ERROR,
         error
       );
     }
-  }
-}; 
+  },
+};

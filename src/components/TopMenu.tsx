@@ -1,153 +1,308 @@
 "use client";
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useTheme } from 'next-themes';
-import { Button } from './ui/Button';
-import { useAuth } from '@/hooks/useAuth';
-import { User, Bell, Menu, X } from 'lucide-react';
-import { useState, useRef, useEffect } from "react";
-import { FirestoreUser } from '@/types/user';
 
-interface TopMenuProps {
-  userData: FirestoreUser | null;
-}
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import {
+  Bell,
+  Home,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  MapPin,
+  Menu,
+  MessageCircle,
+  Plus,
+  Settings,
+  User,
+  Users,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import NotificationButton from "./NotificationButton";
 
-export default function TopMenu({ userData }: TopMenuProps) {
-  const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
+const Navbar = () => {
   const { user, signOut, loading } = useAuth();
+  const { unreadCount } = useNotifications();
+  const router = useRouter();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const moreRef = useRef<HTMLButtonElement>(null);
 
-  const isActive = (path: string) => {
-    if (path === '/') return pathname === '/';
-    return pathname.startsWith(path);
-  };
-
+  // Ferme les menus au clic extérieur
   useEffect(() => {
-    if (!menuOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        menuOpen &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
         setMenuOpen(false);
       }
+      if (
+        moreOpen &&
+        moreRef.current &&
+        !(
+          event.target === moreRef.current ||
+          moreRef.current.contains(event.target as Node)
+        )
+      ) {
+        setMoreOpen(false);
+      }
     };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [menuOpen]);
+    if (menuOpen || moreOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen, moreOpen]);
+
+  // Email court
+  const truncateEmail = (email: string, maxLength: number = 20) => {
+    if (!email) return "";
+    if (email.length > maxLength) {
+      const [name, domain] = email.split("@");
+      return `${name.slice(0, maxLength / 2)}...@${domain}`;
+    }
+    return email;
+  };
+
+  // Helpers
+  const topGradient =
+    "bg-gradient-to-r from-[#233554] via-[#354178] to-[#3887c6]";
+  const bottomGradient =
+    "bg-gradient-to-r from-[#233554] via-[#354178] to-[#3887c6]";
+  const hoverText = "hover:text-[#a3c0ed]";
+  const isActive = (href: string) => pathname === href;
+
+  // Badge notification stylé (blink centré, visible partout)
+  const NotificationBlink = ({ count }: { count: number }) =>
+    count > 0 ? (
+      <span
+        className="absolute flex items-center justify-center pointer-events-none"
+        style={{
+          top: "-7px",
+          right: "-8px", // Plus à droite, sort un peu du bouton
+          width: "24px",
+          height: "24px",
+        }}
+      >
+        {/* Blink/ping */}
+        <span className="absolute w-6 h-6 rounded-full bg-blue-400/70 animate-ping" />
+        {/* Badge nombre */}
+        <span className="relative w-6 h-6 bg-[#3887c6] text-white text-[0.95rem] font-bold flex items-center justify-center rounded-full border-2 border-white shadow-md z-10 transition-all">
+          {count}
+        </span>
+      </span>
+    ) : null;
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-      <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between items-center">
-          {/* Logo */}
-          <div className="flex items-center">
+    <>
+      {/* Navbar principale en haut */}
+      <nav className={`${topGradient} shadow-xl text-white sticky top-0 z-40`}>
+        <div className="flex justify-between items-center py-3 px-4 sm:px-8">
+          {/* Nom du site à gauche */}
+          <Link
+            href="/"
+            className="text-2xl font-extrabold tracking-tight select-none drop-shadow-lg"
+          >
+            Showmate
+          </Link>
+
+          {/* Liens centraux */}
+          <div className="hidden md:flex flex-1 justify-center gap-5">
             <Link
               href="/"
-              className="flex items-center text-xl font-bold text-gray-900 dark:text-white"
+              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
+                isActive("/") ? "bg-white/15 shadow-inner" : hoverText
+              }`}
             >
-              Showmate
+              <Home className="w-5 h-5" /> Accueil
+            </Link>
+            <Link
+              href="/reseau"
+              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
+                isActive("/reseau") ? "bg-white/15 shadow-inner" : hoverText
+              }`}
+            >
+              <Users className="w-5 h-5" /> Réseau
+            </Link>
+            <Link
+              href="/lieux"
+              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
+                isActive("/lieux") ? "bg-white/15 shadow-inner" : hoverText
+              }`}
+            >
+              <MapPin className="w-5 h-5" /> Lieux
+            </Link>
+            <Link
+              href="/profile"
+              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
+                isActive("/profile") ? "bg-white/15 shadow-inner" : hoverText
+              }`}
+            >
+              <User className="w-5 h-5" /> Profil
             </Link>
           </div>
 
-          {/* Menu principal desktop */}
-          <div className="hidden md:flex ml-10 items-center space-x-4">
-            <Link href="/dashboard" className={`rounded-md px-3 py-2 text-sm font-medium ${isActive('/dashboard') ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'}`}>Accueil</Link>
-            <Link href="/reseau" className={`rounded-md px-3 py-2 text-sm font-medium ${isActive('/reseau') ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'}`}>Réseau</Link>
-            <Link href="/lieux" className={`rounded-md px-3 py-2 text-sm font-medium ${isActive('/lieux') ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'}`}>Lieux</Link>
-            <Link href="/profil" className={`rounded-md px-3 py-2 text-sm font-medium ${isActive('/profil') ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'}`}>Profil</Link>
-          </div>
+          {/* Actions à droite */}
+          {!user ? (
+            <div className="flex items-center">
+              {/* Connexion Desktop */}
+              <button
+                onClick={() => router.push("/login")}
+                className="hidden md:flex py-2.5 px-5 rounded-xl font-medium text-base border border-white/80 bg-white/5 hover:bg-white/20 hover:text-[#233554] transition-all duration-150"
+              >
+                <LogIn className="w-5 h-5 mr-2" />
+                Se connecter
+              </button>
+              {/* Connexion Mobile */}
+              <button
+                onClick={() => router.push("/login")}
+                className="flex md:hidden items-center text-white hover:text-[#a3c0ed] transition"
+              >
+                <LogIn className="w-8 h-8" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              {/* Bouton Notifications Desktop */}
+              <div className="hidden md:flex relative ml-1">
+                <NotificationButton />
+                <NotificationBlink count={unreadCount} />
+              </div>
 
-          {/* Booking + Notifications + User (desktop) */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/booking" className={`rounded-md px-3 py-2 text-sm font-medium ${isActive('/profile') ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'}`}>Booking</Link>
-            <button type="button" className="relative flex items-center justify-center w-9 h-9 rounded-full text-gray-600 hover:bg-gray-200 transition" aria-label="Notifications">
-              <Bell className="w-5 h-5" />
-            </button>
-            {loading ? (
-              <>
-                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-              </>
-            ) : (
-              <>
-                {user && (
-                  <div
-                    className="relative group"
-                    ref={menuRef}
-                    onMouseEnter={() => setMenuOpen(true)}
-                    onMouseLeave={() => setMenuOpen(false)}
-                  >
-                    <button
-                      className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
-                      aria-label="Menu utilisateur"
-                      type="button"
-                      onClick={() => setMenuOpen((v) => !v)}
+              {/* Menu utilisateur */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="flex items-center gap-2 focus:outline-none hover:bg-white/15 rounded-full px-2.5 py-1.5 transition duration-150"
+                >
+                  {user?.photoURL ? (
+                    <Image
+                      src={user.photoURL}
+                      alt="Avatar"
+                      width={38}
+                      height={38}
+                      className="rounded-full border-2 border-white/70 shadow"
+                    />
+                  ) : (
+                    <User className="w-9 h-9 rounded-full border-2 border-white/70 shadow bg-gray-700 text-white p-1" />
+                  )}
+                  <Menu className="w-5 h-5" />
+                </button>
+                {/* Menu déroulant */}
+                {menuOpen && (
+                  <div className="absolute right-0 mt-3 w-56 bg-white/95 text-[#233554] rounded-xl shadow-2xl py-3 z-[1000] ring-1 ring-[#a3c0ed] animate-fade-in">
+                    <div className="px-5 pb-2 text-base font-semibold">
+                      {user?.email ? truncateEmail(user.email, 20) : "Invité"}
+                    </div>
+                    <hr className="my-2 border-[#a3c0ed]" />
+                    <Link
+                      href="/profile"
+                      className="block px-5 py-2 hover:bg-[#e5eaff] hover:text-[#233554] rounded flex items-center gap-2"
+                      onClick={() => setMenuOpen(false)}
                     >
                       <User className="w-5 h-5" />
+                      Profil
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="block px-5 py-2 hover:bg-[#e5eaff] hover:text-[#233554] rounded flex items-center gap-2"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Settings className="w-5 h-5" />
+                      Paramètres
+                    </Link>
+                    <button
+                      onClick={async () => {
+                        setMenuOpen(false);
+                        await signOut();
+                        router.push("/login");
+                      }}
+                      className="w-full text-left px-5 py-2 hover:bg-[#e5eaff] hover:text-[#3887c6] flex items-center gap-2 text-[#3887c6] rounded"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Déconnexion
                     </button>
-                    {(menuOpen) && (
-                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 py-1 z-[100]">
-                        <Link
-                          href="/profile"
-                          className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          onClick={() => setMenuOpen(false)}
-                        >
-                          Paramètres
-                        </Link>
-                        <button
-                          onClick={() => { setMenuOpen(false); signOut(); }}
-                          className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                          Déconnexion
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
-              </>
-            )}
-          </div>
-
-          {/* Burger mobile */}
-          <button
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-full text-gray-600 hover:bg-gray-200 transition"
-            aria-label="Ouvrir le menu"
-            onClick={() => setMobileMenuOpen(true)}
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-
-      {/* Menu mobile (drawer ou overlay) */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex">
-          <div className="bg-white dark:bg-gray-900 w-64 h-full p-6 flex flex-col">
-            <button
-              className="self-end mb-6"
-              aria-label="Fermer le menu"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <nav className="flex flex-col gap-4">
-              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className={isActive('/dashboard') ? 'font-bold' : ''}>Accueil</Link>
-              <Link href="/reseau" onClick={() => setMobileMenuOpen(false)} className={isActive('/reseau') ? 'font-bold' : ''}>Réseau</Link>
-              <Link href="/lieux" onClick={() => setMobileMenuOpen(false)} className={isActive('/lieux') ? 'font-bold' : ''}>Lieux</Link>
-              <Link href="/profil" onClick={() => setMobileMenuOpen(false)} className={isActive('/profil') ? 'font-bold' : ''}>Profil</Link>
-              <Link href="/booking" onClick={() => setMobileMenuOpen(false)} className={isActive('/booking') ? 'font-bold' : ''}>Booking</Link>
-            </nav>
-            <div className="mt-auto flex gap-2">
-              <button type="button" className="relative flex items-center justify-center w-9 h-9 rounded-full text-gray-600 hover:bg-gray-200 transition" aria-label="Notifications">
-                <Bell className="w-5 h-5" />
-              </button>
-              {/* ... bouton utilisateur mobile ... */}
+              </div>
             </div>
-          </div>
-          {/* Fermer le menu si on clique sur l'overlay */}
-          <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
+          )}
         </div>
-      )}
-    </nav>
+      </nav>
+
+      {/* Navbar Mobile (Bottom) */}
+      <div
+        className={`${bottomGradient} z-[100] fixed bottom-0 w-full flex justify-around items-center py-4 md:hidden shadow-lg`}
+      >
+        <Link
+          href="/dashboard"
+          className={`flex flex-col items-center gap-0.5 text-white ${
+            isActive("/dashboard") ? "text-[#a3c0ed]" : "hover:text-[#a3c0ed]"
+          }`}
+        >
+          <LayoutDashboard className="w-7 h-7" />
+          <span className="text-[0.82rem] font-medium">Tableau</span>
+        </Link>
+        <Link
+          href="/messages"
+          className={`flex flex-col items-center gap-0.5 text-white ${
+            isActive("/messages") ? "text-[#a3c0ed]" : "hover:text-[#a3c0ed]"
+          }`}
+        >
+          <MessageCircle className="w-7 h-7" />
+          <span className="text-[0.82rem] font-medium">Messages</span>
+        </Link>
+        <Link
+          href="/notifications"
+          className={`flex flex-col items-center gap-0.5 text-white relative ${
+            isActive("/notifications")
+              ? "text-[#a3c0ed]"
+              : "hover:text-[#a3c0ed]"
+          }`}
+        >
+          <span className="relative flex items-center justify-center">
+            <Bell className="w-7 h-7" />
+            <NotificationBlink count={unreadCount} />
+          </span>
+          <span className="text-[0.82rem] font-medium">Notifs</span>
+        </Link>
+        {/* Bouton Plus */}
+        <button
+          ref={moreRef}
+          className={`flex flex-col items-center gap-0.5 text-white hover:text-[#a3c0ed] relative focus:outline-none`}
+          onClick={() => setMoreOpen((v) => !v)}
+        >
+          <Plus className="w-7 h-7" />
+          <span className="text-[0.82rem] font-medium">Plus</span>
+          {moreOpen && (
+            <div className="absolute bottom-14 right-0 bg-white text-[#233554] rounded-xl shadow-2xl py-2 w-32 z-[200] animate-fade-in ring-1 ring-[#a3c0ed]">
+              <Link
+                href="/reseau"
+                className="block px-4 py-2 hover:bg-[#e5eaff] rounded"
+                onClick={() => setMoreOpen(false)}
+              >
+                <Users className="inline w-4 h-4 mr-2" /> Réseau
+              </Link>
+              <Link
+                href="/lieux"
+                className="block px-4 py-2 hover:bg-[#e5eaff] rounded"
+                onClick={() => setMoreOpen(false)}
+              >
+                <MapPin className="inline w-4 h-4 mr-2" /> Lieux
+              </Link>
+            </div>
+          )}
+        </button>
+      </div>
+    </>
   );
-} 
+};
+
+export default Navbar;

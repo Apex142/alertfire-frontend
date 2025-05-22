@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from '@/components/ui/Button';
+import { Button } from "@/components/ui/Button";
 
 interface RoleTemplate {
   id: string;
@@ -10,18 +10,23 @@ interface RoleTemplate {
 
 interface StepDetailsProps {
   role: RoleTemplate | null;
-  linkType: 'project' | 'events';
-  setLinkType: (type: 'project' | 'events') => void;
+  linkType: "project" | "events";
+  setLinkType: (type: "project" | "events") => void;
   onNext: () => void;
 }
 
-export default function StepDetails({ role, linkType, setLinkType, onNext }: StepDetailsProps) {
-  const handleSelect = (type: 'project' | 'events') => {
+export default function StepDetails({
+  role,
+  linkType,
+  setLinkType,
+  onNext,
+}: StepDetailsProps) {
+  const handleSelect = (type: "project" | "events") => {
     setLinkType(type);
     onNext();
   };
 
-  const roleLabel = role?.label || 'non défini';
+  const roleLabel = role?.label || "non défini";
 
   return (
     <div>
@@ -31,24 +36,25 @@ export default function StepDetails({ role, linkType, setLinkType, onNext }: Ste
       <div className="flex gap-4 mb-4">
         <Button
           type="button"
-          variant={linkType === 'project' ? 'primary' : 'secondary'}
-          onClick={() => handleSelect('project')}
+          variant={linkType === "project" ? "primary" : "secondary"}
+          onClick={() => handleSelect("project")}
           className="flex-1"
         >
-          L'ensemble du projet
+          L'ensemble du project
         </Button>
         <Button
           type="button"
-          variant={linkType === 'events' ? 'primary' : 'secondary'}
-          onClick={() => handleSelect('events')}
+          variant={linkType === "events" ? "primary" : "secondary"}
+          onClick={() => handleSelect("events")}
           className="flex-1"
         >
           Un ou des événements
         </Button>
       </div>
       <p className="text-gray-500 text-sm">
-        Choisissez si ce poste doit être affecté à tout le projet ou à des événements spécifiques.
+        Choisissez si ce poste doit être affecté à tout le project ou à des
+        événements spécifiques.
       </p>
     </div>
   );
-} 
+}

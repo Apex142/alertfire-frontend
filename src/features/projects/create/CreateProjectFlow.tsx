@@ -1,27 +1,43 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Step1InformationsGenerales from './Step1InformationsGenerales';
-import Step2CompanyAndPrivacy from './Step2CompanyAndPrivacy';
-import { createPost, createMembership } from '@/features/project/roles/add/roleService';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useUserData } from '@/hooks/useUserData';
-import { notify } from '@/lib/notify';
-import { useRouter } from 'next/navigation';
+import {
+  createMembership,
+  createPost,
+} from "@/features/project/roles/add/roleService";
+import { useUserData } from "@/hooks/useUserData";
+import { db } from "@/lib/firebase";
+import { notify } from "@/lib/notify";
+import { addDoc, collection } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Step1InformationsGenerales from "./Step1InformationsGenerales";
+import Step2CompanyAndPrivacy from "./Step2CompanyAndPrivacy";
 
-export default function CreateProjectFlow({ initialDate }: { initialDate?: Date }) {
+interface Step1Data {
+  [key: string]: any; // Remplace avec une interface propre si possible
+}
+
+interface Props {
+  initialDate?: Date;
+  onClose?: () => void;
+  onProjectCreated?: (projectId: string) => void;
+}
+
+export default function CreateProjectFlow({
+  initialDate,
+  onClose,
+  onProjectCreated,
+}: Props) {
   const [step, setStep] = useState(1);
-  const [step1Data, setStep1Data] = useState<any>(null);
+  const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
   const { user } = useUserData();
   const router = useRouter();
 
-  const handleCreateProject = async (projectData: any) => {
+  const handleCreateProject = async (projectData: Step1Data) => {
     if (!user) return;
 
     try {
-      // 1. Création du projet
-      const projectRef = await addDoc(collection(db, 'projects'), {
+      const projectRef = await addDoc(collection(db, "projects"), {
         ...projectData,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -29,36 +45,39 @@ export default function CreateProjectFlow({ initialDate }: { initialDate?: Date 
       });
       const projectId = projectRef.id;
 
-      // 2. Création du post admin
       await createPost({
         projectId,
         postData: {
           isGlobal: true,
-          eventId: '',
+          eventId: "",
           createdBy: user.uid,
-          title: 'Administrateur',
-          icon: 'admin-icon', // ou une icône par défaut
+          title: "Administrateur",
+          icon: "admin-icon",
           priority: 0,
-          category: 'admin',
+          category: "admin",
           memberIds: [user.uid],
-          role_template_id: 'admin',
-        }
+          role_template_id: "admin",
+        },
       });
 
-      // 3. Création du membership admin
       await createMembership({
         userId: user.uid,
         projectId,
-        role: 'admin',
-        status: 'approved',
-        linkType: 'project',
-        selectedEvents: []
+        role: "admin",
+        status: "approved",
+        linkType: "project",
+        selectedEvents: [],
       });
 
-      notify.success('Projet créé avec succès !');
-      router.push(`/projet/${projectId}/`);
+      notify.success("project créé avec succès !");
+
+      if (onProjectCreated) onProjectCreated(projectId);
+      else router.push(`/project/${projectId}/`);
     } catch (e) {
-      notify.error('Erreur lors de la création du projet : ' + (e instanceof Error ? e.message : ''));
+      notify.error(
+        "Erreur lors de la création du project : " +
+          (e instanceof Error ? e.message : "")
+      );
     }
   };
 
@@ -66,22 +85,23 @@ export default function CreateProjectFlow({ initialDate }: { initialDate?: Date 
     <>
       {step === 1 && (
         <Step1InformationsGenerales
-          onNext={(data: any) => {
+          onNext={(data: Step1Data) => {
             setStep1Data(data);
             setStep(2);
           }}
           initialDate={initialDate}
         />
       )}
-      {step === 2 && (
+      {step === 2 && step1Data && (
         <Step2CompanyAndPrivacy
           onNext={async (data) => {
             const mergedData = { ...step1Data, ...data };
             await handleCreateProject(mergedData);
+            onClose?.();
           }}
           onBack={() => setStep(1)}
         />
       )}
     </>
   );
-} 
+}

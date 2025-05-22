@@ -1,51 +1,54 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import CreateProjectFlow from "@/features/projects/create/CreateProjectFlow";
+import { useUserData } from "@/hooks/useUserData";
 import {
   CalendarView,
-  CalendarEvent,
-  getMonthDays,
-  getWeekDays,
+  formatDate,
   getEventsForDay,
   getEventsForTimeRange,
-  formatDate,
+  getMonthDays,
+  getNextMonth,
+  getNextWeek,
+  getPreviousMonth,
+  getPreviousWeek,
+  getWeekDays,
   isCurrentDay,
   isCurrentMonth,
-  getNextMonth,
-  getPreviousMonth,
-  getNextWeek,
-  getPreviousWeek,
-  sortEventsByDate
-} from '@/lib/calendarUtils';
-import { Card } from '../ui/Card';
-import Modal from '../ui/Modal';
-import CreateProjectFlow from '@/features/projects/create/CreateProjectFlow';
-import { useUserProjects } from '@/hooks/useUserProjects';
-import Link from 'next/link';
-import { useUserData } from '@/hooks/useUserData';
+  sortEventsByDate,
+} from "@/lib/calendarUtils";
+import { cn } from "@/lib/utils";
+import {
+  endOfMonth,
+  endOfWeek,
+  format,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
+import { fr } from "date-fns/locale";
+import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+import { useState } from "react";
+import Modal from "../ui/Modal";
 
 interface Props {
   onProjectClick?: (projectId: string) => void;
 }
 
 export default function CustomProjectScheduler({ onProjectClick }: Props) {
-  const [view, setView] = useState<CalendarView>('month');
+  const [view, setView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
   // Déterminer la période affichée selon la vue
   let from: Date, to: Date;
-  if (view === 'month') {
+  if (view === "month") {
     from = startOfMonth(currentDate);
     to = endOfMonth(currentDate);
-  } else if (view === 'week') {
+  } else if (view === "week") {
     from = startOfWeek(currentDate, { weekStartsOn: 1 });
     to = endOfWeek(currentDate, { weekStartsOn: 1 });
   } else {
@@ -53,22 +56,21 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
     to = endOfMonth(currentDate);
   }
 
-  // Hook pour charger dynamiquement les projets de l'utilisateur
+  // Hook pour charger dynamiquement les projects de l'utilisateur
   const { projects, loading, error } = useUserData();
 
-  // Filtrer les projets selon la période affichée
-  const filteredProjects = projects.filter(p => {
+  // Filtrer les projects selon la période affichée
+  const filteredProjects = projects.filter((p) => {
     if (!p.startDate) return false;
-    return (
-      (!from || p.startDate >= from) &&
-      (!to || p.startDate <= to)
-    );
+    return (!from || p.startDate >= from) && (!to || p.startDate <= to);
   });
 
-  // Adapter les projets pour matcher le type CalendarEvent
-  const calendarProjects = filteredProjects.map(p => ({
+  // Adapter les projects pour matcher le type CalendarEvent
+  const calendarProjects = filteredProjects.map((p) => ({
     ...p,
-    status: (p.status === 'Confirmé' || p.status === 'validé' ? 'confirmé' : 'optionnel') as 'confirmé' | 'optionnel',
+    status: (p.status === "Confirmé" || p.status === "validé"
+      ? "confirmé"
+      : "optionnel") as "confirmé" | "optionnel",
     startDate: p.startDate,
     endDate: p.endDate,
     id: p.id,
@@ -80,17 +82,17 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
   const days = getMonthDays(currentDate);
 
   const handlePrevious = () => {
-    if (view === 'month') {
+    if (view === "month") {
       setCurrentDate(getPreviousMonth(currentDate));
-    } else if (view === 'week') {
+    } else if (view === "week") {
       setCurrentDate(getPreviousWeek(currentDate));
     }
   };
 
   const handleNext = () => {
-    if (view === 'month') {
+    if (view === "month") {
       setCurrentDate(getNextMonth(currentDate));
-    } else if (view === 'week') {
+    } else if (view === "week") {
       setCurrentDate(getNextWeek(currentDate));
     }
   };
@@ -100,14 +102,19 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
   };
 
   const renderMonthView = () => {
-    {/* CALENDRIER MOIS */ }
+    {
+      /* CALENDRIER MOIS */
+    }
     const days = getMonthDays(currentDate);
-    const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
     return (
       <div className="grid grid-cols-7 gap-px bg-gray-200">
         {weekDays.map((day) => (
-          <div key={day} className="bg-gray-50 h-[50px] flex items-center justify-center text-xs font-medium text-gray-700">
+          <div
+            key={day}
+            className="bg-gray-50 h-[50px] flex items-center justify-center text-xs font-medium text-gray-700"
+          >
             {day}
           </div>
         ))}
@@ -116,59 +123,67 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
           const isToday = isCurrentDay(day);
           const isCurrentMonthDay = isCurrentMonth(day, currentDate);
 
-          // Couleur de fond : couleur du premier projet du jour, sinon bg-primary si au moins un projet, sinon blanc
-          let cellBg = 'bg-white';
+          // Couleur de fond : couleur du premier project du jour, sinon bg-primary si au moins un project, sinon blanc
+          let cellBg = "bg-white";
           if (dayEvents.length > 0) {
-            cellBg = dayEvents[0].color || 'bg-primary';
+            cellBg = dayEvents[0].color || "bg-primary";
           }
 
           return (
             <div
               key={index}
               className={cn(
-                'min-h-[100px] bg-white p-2',
-                !isCurrentMonthDay && 'bg-gray-50 text-gray-400',
-                isToday && 'bg-blue-50'
+                "min-h-[100px] bg-white p-2",
+                !isCurrentMonthDay && "bg-gray-50 text-gray-400",
+                isToday && "bg-blue-50"
               )}
               onClick={() => {
                 setSelectedDate(day);
                 setOpenCreateModal(true);
               }}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: "pointer" }}
             >
               <div className="flex items-center gap-1 mb-2">
-                <div className={cn(
-                  'text-sm font-medium',
-                  isToday && 'flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white'
-                )}>
-                  {format(day, 'd')}
+                <div
+                  className={cn(
+                    "text-sm font-medium",
+                    isToday &&
+                      "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
+                  )}
+                >
+                  {format(day, "d")}
                 </div>
                 <span className="text-xs text-gray-500">
-                  {format(day, 'EEE', { locale: fr })}
+                  {format(day, "EEE", { locale: fr })}
                 </span>
               </div>
               <div className="space-y-1">
                 {dayEvents.map((event) => (
                   <Link
                     key={event.id}
-                    href={`/projet/${event.id}`}
-                    onClick={e => { e.stopPropagation(); onProjectClick?.(event.id); }}
+                    href={`/project/${event.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onProjectClick?.(event.id);
+                    }}
                     className="block"
                   >
                     <div
                       className={cn(
-                        'cursor-pointer rounded p-1 text-xs',
-                        'hover:opacity-80',
-                        'border-l-4',
+                        "cursor-pointer rounded p-1 text-xs",
+                        "hover:opacity-80",
+                        "border-l-4",
                         {
-                          'border-green-500': event.status === 'confirmé',
-                          'border-yellow-500': event.status === 'optionnel'
+                          "border-green-500": event.status === "confirmé",
+                          "border-yellow-500": event.status === "optionnel",
                         }
                       )}
-                      style={{ backgroundColor: event.color || 'bg-primary' }}
+                      style={{ backgroundColor: event.color || "bg-primary" }}
                     >
                       <div className="flex items-center gap-1">
-                        <span className="truncate font-medium text-white">{event.projectName || event.name}</span>
+                        <span className="truncate font-medium text-white">
+                          {event.projectName || event.name}
+                        </span>
                       </div>
                     </div>
                   </Link>
@@ -182,7 +197,9 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
   };
 
   const renderWeekView = () => {
-    {/* CALENDRIER SEMAINE */ }
+    {
+      /* CALENDRIER SEMAINE */
+    }
     const days = getWeekDays(currentDate);
     const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8h à 20h
 
@@ -190,52 +207,74 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
       <div className="flex overflow-x-auto">
         <div className="w-20 flex-shrink-0">
           {hours.map((hour) => (
-            <div key={hour} className="h-16 border-b border-gray-200 p-1 text-sm text-gray-500">
+            <div
+              key={hour}
+              className="h-16 border-b border-gray-200 p-1 text-sm text-gray-500"
+            >
               {hour}h
             </div>
           ))}
         </div>
         <div className="flex flex-1">
           {days.map((day) => (
-            <div key={day.toISOString()} className="flex-1 border-l border-gray-200">
-              <div className={cn(
-                'border-b border-gray-200 p-2 text-center',
-                isCurrentDay(day) && 'bg-blue-50'
-              )}>
-                <div className="font-medium">{format(day, 'EEE', { locale: fr })}</div>
-                <div className={cn(
-                  'text-sm text-gray-500',
-                  isCurrentDay(day) && 'mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white mx-auto'
-                )}>
-                  {format(day, 'd')}
+            <div
+              key={day.toISOString()}
+              className="flex-1 border-l border-gray-200"
+            >
+              <div
+                className={cn(
+                  "border-b border-gray-200 p-2 text-center",
+                  isCurrentDay(day) && "bg-blue-50"
+                )}
+              >
+                <div className="font-medium">
+                  {format(day, "EEE", { locale: fr })}
+                </div>
+                <div
+                  className={cn(
+                    "text-sm text-gray-500",
+                    isCurrentDay(day) &&
+                      "mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white mx-auto"
+                  )}
+                >
+                  {format(day, "d")}
                 </div>
               </div>
               <div className="relative">
                 {hours.map((hour) => {
-                  const hourEvents = getEventsForTimeRange(calendarProjects, day, hour);
+                  const hourEvents = getEventsForTimeRange(
+                    calendarProjects,
+                    day,
+                    hour
+                  );
                   return (
                     <div key={hour} className="h-16 border-b border-gray-200">
                       {hourEvents.map((event) => (
                         <Link
                           key={event.id}
-                          href={`/projet/${event.id}`}
-                          onClick={e => { e.stopPropagation(); onProjectClick?.(event.id); }}
+                          href={`/project/${event.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onProjectClick?.(event.id);
+                          }}
                           className="block"
                         >
                           <div
                             className={cn(
-                              'absolute left-1 right-1 cursor-pointer rounded p-1 text-xs',
+                              "absolute left-1 right-1 cursor-pointer rounded p-1 text-xs",
                               event.color,
-                              'hover:opacity-80'
+                              "hover:opacity-80"
                             )}
                             style={{
-                              top: '4px',
-                              height: 'calc(100% - 8px)',
+                              top: "4px",
+                              height: "calc(100% - 8px)",
                             }}
                           >
                             <div className="flex items-center gap-1">
                               <span className="h-2 w-2 rounded-full bg-white" />
-                              <span className="truncate font-medium">{event.name}</span>
+                              <span className="truncate font-medium">
+                                {event.name}
+                              </span>
                             </div>
                           </div>
                         </Link>
@@ -252,7 +291,9 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
   };
 
   const renderListView = () => {
-    {/* LISTE DES PROJETS */ }
+    {
+      /* LISTE DES projectS */
+    }
     const sortedProjects = sortEventsByDate(calendarProjects);
 
     return (
@@ -260,10 +301,10 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
         {sortedProjects.map((project) => (
           <Link
             key={project.id}
-            href={`/projet/${project.id}`}
+            href={`/project/${project.id}`}
             onClick={() => onProjectClick?.(project.id)}
             className={cn(
-              'cursor-pointer rounded-lg border border-gray-200 p-4 shadow-sm transition-shadow hover:shadow-md',
+              "cursor-pointer rounded-lg border border-gray-200 p-4 shadow-sm transition-shadow hover:shadow-md",
               project.color
             )}
           >
@@ -272,22 +313,30 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
                 <span className="h-3 w-3 rounded-full bg-white" />
                 <h3 className="font-medium">{project.name}</h3>
               </div>
-              <span className={cn(
-                'rounded-full px-2 py-1 text-xs font-medium',
-                {
-                  'bg-green-100 text-green-800': project.status === 'confirmé',
-                  'bg-yellow-100 text-yellow-800': project.status === 'optionnel',
-                }
-              )}>
+              <span
+                className={cn("rounded-full px-2 py-1 text-xs font-medium", {
+                  "bg-green-100 text-green-800": project.status === "confirmé",
+                  "bg-yellow-100 text-yellow-800":
+                    project.status === "optionnel",
+                })}
+              >
                 {project.status}
               </span>
             </div>
             <div className="mt-2 text-sm text-gray-600">
-              {formatDate(project.startDate instanceof Date ? project.startDate : new Date(project.startDate))}
+              {formatDate(
+                project.startDate instanceof Date
+                  ? project.startDate
+                  : new Date(project.startDate)
+              )}
               {project.endDate && (
                 <>
-                  {' - '}
-                  {formatDate(project.endDate instanceof Date ? project.endDate : new Date(project.endDate))}
+                  {" - "}
+                  {formatDate(
+                    project.endDate instanceof Date
+                      ? project.endDate
+                      : new Date(project.endDate)
+                  )}
                 </>
               )}
             </div>
@@ -299,10 +348,18 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
 
   // Affichage loading/erreur
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[300px] text-gray-500">Chargement des projets…</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-gray-500">
+        Chargement des projects…
+      </div>
+    );
   }
   if (error) {
-    return <div className="flex items-center justify-center min-h-[300px] text-red-500">{error}</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-red-500">
+        {error}
+      </div>
+    );
   }
 
   return (
@@ -310,7 +367,7 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
       <div className="flex items-center justify-between px-4 py-2 flex-shrink-0">
         {/* Navigation centrée */}
         <div className="flex-1 flex justify-center">
-          {(view === 'month' || view === 'week') && (
+          {(view === "month" || view === "week") && (
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrevious}
@@ -326,9 +383,13 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
                 Aujourd'hui
               </button>
               <span className="font-medium text-lg">
-                {view === 'month'
-                  ? format(currentDate, 'MMMM yyyy', { locale: fr })
-                  : `Semaine du ${format(getWeekDays(currentDate)[0], 'd MMMM', { locale: fr })}`}
+                {view === "month"
+                  ? format(currentDate, "MMMM yyyy", { locale: fr })
+                  : `Semaine du ${format(
+                      getWeekDays(currentDate)[0],
+                      "d MMMM",
+                      { locale: fr }
+                    )}`}
               </span>
               <button
                 onClick={handleNext}
@@ -342,18 +403,22 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
         </div>
         {/* Boutons de vue alignés à droite */}
         <div className="flex space-x-1 justify-end">
-          {(['month', 'week', 'list'] as CalendarView[]).map((viewType) => (
+          {(["month", "week", "list"] as CalendarView[]).map((viewType) => (
             <button
               key={viewType}
               onClick={() => setView(viewType)}
               className={cn(
-                'rounded-md px-4 py-1.5 text-sm font-medium transition-colors hover:cursor-pointer',
+                "rounded-md px-4 py-1.5 text-sm font-medium transition-colors hover:cursor-pointer",
                 view === viewType
-                  ? 'bg-primary text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? "bg-primary text-white"
+                  : "text-gray-600 hover:bg-gray-100"
               )}
             >
-              {viewType === 'month' ? 'Mois' : viewType === 'week' ? 'Semaine' : 'Liste'}
+              {viewType === "month"
+                ? "Mois"
+                : viewType === "week"
+                ? "Semaine"
+                : "Liste"}
             </button>
           ))}
         </div>
@@ -368,7 +433,7 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
             transition={{ duration: 0.2 }}
             className="h-full"
           >
-            {view === 'month' && (
+            {view === "month" && (
               <div className="grid grid-cols-7 gap-px bg-gray-200 h-full">
                 {days.map((day, index) => {
                   const dayEvents = getEventsForDay(calendarProjects, day);
@@ -379,49 +444,61 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
                     <div
                       key={index}
                       className={cn(
-                        'min-h-[100px] bg-white p-2',
-                        !isCurrentMonthDay && 'bg-gray-50 text-gray-400',
-                        isToday && 'bg-blue-50'
+                        "min-h-[100px] bg-white p-2",
+                        !isCurrentMonthDay && "bg-gray-50 text-gray-400",
+                        isToday && "bg-blue-50"
                       )}
                       onClick={() => {
                         setSelectedDate(day);
                         setOpenCreateModal(true);
                       }}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: "pointer" }}
                     >
                       <div className="flex items-center gap-1 mb-2">
-                        <div className={cn(
-                          'text-sm font-medium',
-                          isToday && 'flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white'
-                        )}>
-                          {format(day, 'd')}
+                        <div
+                          className={cn(
+                            "text-sm font-medium",
+                            isToday &&
+                              "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
+                          )}
+                        >
+                          {format(day, "d")}
                         </div>
                         <span className="text-xs text-gray-500">
-                          {format(day, 'EEE', { locale: fr })}
+                          {format(day, "EEE", { locale: fr })}
                         </span>
                       </div>
                       <div className="space-y-1">
                         {dayEvents.map((event) => (
                           <Link
                             key={event.id}
-                            href={`/projet/${event.id}`}
-                            onClick={e => { e.stopPropagation(); onProjectClick?.(event.id); }}
+                            href={`/project/${event.id}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onProjectClick?.(event.id);
+                            }}
                             className="block"
                           >
                             <div
                               className={cn(
-                                'cursor-pointer rounded p-1 text-xs',
-                                'hover:opacity-80',
-                                'border-l-4',
+                                "cursor-pointer rounded p-1 text-xs",
+                                "hover:opacity-80",
+                                "border-l-4",
                                 {
-                                  'border-green-500': event.status === 'confirmé',
-                                  'border-yellow-500': event.status === 'optionnel'
+                                  "border-green-500":
+                                    event.status === "confirmé",
+                                  "border-yellow-500":
+                                    event.status === "optionnel",
                                 }
                               )}
-                              style={{ backgroundColor: event.color || 'bg-primary' }}
+                              style={{
+                                backgroundColor: event.color || "bg-primary",
+                              }}
                             >
                               <div className="flex items-center gap-1">
-                                <span className="truncate font-medium text-white">{event.projectName || event.name}</span>
+                                <span className="truncate font-medium text-white">
+                                  {event.projectName || event.name}
+                                </span>
                               </div>
                             </div>
                           </Link>
@@ -432,23 +509,29 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
                 })}
               </div>
             )}
-            {view === 'week' && renderWeekView()}
-            {view === 'list' && renderListView()}
+            {view === "week" && renderWeekView()}
+            {view === "list" && renderListView()}
           </motion.div>
         </AnimatePresence>
       </div>
-      <Modal open={openCreateModal} onClose={() => setOpenCreateModal(false)} title="Créer un projet">
-        <CreateProjectFlow initialDate={
-          selectedDate
-            ? (() => {
-              const d = new Date(selectedDate);
-              d.setHours(0, 0, 0, 0);
-              d.setHours(d.getHours() + 2);
-              return d;
-            })()
-            : undefined
-        } />
+      <Modal
+        open={openCreateModal}
+        onClose={() => setOpenCreateModal(false)}
+        title="Créer un project"
+      >
+        <CreateProjectFlow
+          initialDate={
+            selectedDate
+              ? (() => {
+                  const d = new Date(selectedDate);
+                  d.setHours(0, 0, 0, 0);
+                  d.setHours(d.getHours() + 2);
+                  return d;
+                })()
+              : undefined
+          }
+        />
       </Modal>
     </div>
   );
-} 
+}

@@ -1,23 +1,25 @@
-'use client';
+"use client";
 
-import { useActiveProject } from '@/stores/useActiveProjectStore';
-import ProjectDashboardClient from '@/features/project/dashboard/ProjectDashboardClient';
-import { Loading } from '@/components/ui/Loading';
-import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { Loading } from "@/components/ui/Loading";
+import ProjectDashboardClient from "@/features/project/dashboard/ProjectDashboardClient";
+import { useActiveProject } from "@/stores/useActiveProjectStore";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface ProjectDashboardWrapperProps {
   projectId: string;
 }
 
-export default function ProjectDashboardWrapper({ projectId }: ProjectDashboardWrapperProps) {
+export default function ProjectDashboardWrapper({
+  projectId,
+}: ProjectDashboardWrapperProps) {
   const router = useRouter();
   const [retryCount, setRetryCount] = useState(0);
   const { project, isLoading, error, setActiveProject } = useActiveProject();
   const initRef = useRef(false);
   const initializationRef = useRef<Promise<void> | null>(null);
 
-  // Effet pour initialiser le projet une seule fois
+  // Effet pour initialiser le project une seule fois
   useEffect(() => {
     if (!projectId || initRef.current) return;
 
@@ -29,7 +31,7 @@ export default function ProjectDashboardWrapper({ projectId }: ProjectDashboardW
         await initializationRef.current;
         initRef.current = true;
       } catch (err) {
-        console.error('Error initializing project:', err);
+        console.error("Error initializing project:", err);
         initializationRef.current = null;
       }
     };
@@ -46,13 +48,13 @@ export default function ProjectDashboardWrapper({ projectId }: ProjectDashboardW
   useEffect(() => {
     if (!error || !projectId || retryCount >= 3) return;
 
-    if (error.message === 'Projet non trouvé') {
-      router.push('/projets?error=project-not-found');
+    if (error.message === "project non trouvé") {
+      router.push("/projects?error=project-not-found");
       return;
     }
 
     const timer = setTimeout(() => {
-      setRetryCount(prev => prev + 1);
+      setRetryCount((prev) => prev + 1);
       setActiveProject(projectId);
     }, 1000 * (retryCount + 1)); // Exponential backoff
 
@@ -67,7 +69,11 @@ export default function ProjectDashboardWrapper({ projectId }: ProjectDashboardW
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loading
-          message={retryCount > 0 ? `Nouvelle tentative (${retryCount}/3)...` : "Chargement du projet..."}
+          message={
+            retryCount > 0
+              ? `Nouvelle tentative (${retryCount}/3)...`
+              : "Chargement du project..."
+          }
           size="lg"
         />
       </div>
@@ -78,11 +84,9 @@ export default function ProjectDashboardWrapper({ projectId }: ProjectDashboardW
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="text-red-500 text-xl mb-4">
-          Une erreur est survenue lors du chargement du projet
+          Une erreur est survenue lors du chargement du project
         </div>
-        <p className="text-gray-600 mb-4">
-          {error.message}
-        </p>
+        <p className="text-gray-600 mb-4">{error.message}</p>
         <div className="space-x-4">
           <button
             onClick={() => {
@@ -95,10 +99,10 @@ export default function ProjectDashboardWrapper({ projectId }: ProjectDashboardW
             Réessayer
           </button>
           <button
-            onClick={() => router.push('/projets')}
+            onClick={() => router.push("/projects")}
             className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
           >
-            Retourner à la liste des projets
+            Retourner à la liste des projects
           </button>
         </div>
       </div>
@@ -110,4 +114,4 @@ export default function ProjectDashboardWrapper({ projectId }: ProjectDashboardW
   }
 
   return <ProjectDashboardClient project={project} />;
-} 
+}

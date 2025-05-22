@@ -11,10 +11,12 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.8",
     "@hookform/resolvers": "^5.0.1",
+    "@sendgrid/mail": "^8.1.5",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
     "firebase": "^11.7.1",
     "firebase-admin": "^13.3.0",
     "framer-motion": "^12.10.0",
@@ -23,10 +25,12 @@
     "mui": "^0.0.1",
     "next": "15.3.1",
     "next-themes": "^0.4.6",
+    "nodemailer": "^7.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-firebase-hooks": "^5.1.1",
     "react-hook-form": "^7.56.2",
+    "react-modal-sheet": "^4.4.0",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "zod": "^3.24.4",
@@ -44,5 +48,6 @@
     "eslint-config-next": "15.3.1",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "yarn@4.4.0+sha512.91d93b445d9284e7ed52931369bc89a663414e5582d00eea45c67ddc459a2582919eece27c412d6ffd1bd0793ff35399381cb229326b961798ce4f4cc60ddfdb"
 }

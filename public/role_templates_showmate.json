@@ -203,8 +203,8 @@
     "isDefault": true
   },
   {
-    "id": "chef_de_projet",
-    "label": "Chef de Projet",
+    "id": "chef_de_project",
+    "label": "Chef de project",
     "category": "Manager",
     "icon": "🧑‍💼",
     "isDefault": true

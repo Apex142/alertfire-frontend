@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { useRouter } from 'next/navigation';
-import { useUserData } from '@/hooks/useUserData';
+import { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
+import { useUserData } from "@/hooks/useUserData";
 
 export default function ProjectError({
   error,
@@ -17,81 +17,83 @@ export default function ProjectError({
 
   useEffect(() => {
     // Log l'erreur pour le debugging
-    console.error('Erreur projet:', error);
+    console.error("Erreur project:", error);
   }, [error]);
 
   const getErrorMessage = () => {
     switch (error.message) {
-      case 'PROJECT_NOT_FOUND':
+      case "PROJECT_NOT_FOUND":
         return {
-          title: 'Projet non trouvé',
-          message: 'Le projet que vous recherchez n\'existe pas ou a été supprimé.',
-          icon: '🔍',
+          title: "project non trouvé",
+          message:
+            "Le project que vous recherchez n'existe pas ou a été supprimé.",
+          icon: "🔍",
           actions: [
             {
-              label: 'Retour au tableau de bord',
-              onClick: () => router.push('/dashboard'),
-              variant: 'primary' as const,
+              label: "Retour au tableau de bord",
+              onClick: () => router.push("/dashboard"),
+              variant: "primary" as const,
             },
             {
-              label: 'Créer un nouveau projet',
-              onClick: () => router.push('/projet/nouveau'),
-              variant: 'outline' as const,
+              label: "Créer un nouveau project",
+              onClick: () => router.push("/project/nouveau"),
+              variant: "outline" as const,
             },
           ],
         };
 
-      case 'ACCESS_DENIED':
+      case "ACCESS_DENIED":
         return {
-          title: 'Accès refusé',
-          message: 'Vous n\'avez pas les droits nécessaires pour accéder à ce projet.',
-          icon: '🔒',
+          title: "Accès refusé",
+          message:
+            "Vous n'avez pas les droits nécessaires pour accéder à ce project.",
+          icon: "🔒",
           actions: [
             {
-              label: 'Retour au tableau de bord',
-              onClick: () => router.push('/dashboard'),
-              variant: 'primary' as const,
+              label: "Retour au tableau de bord",
+              onClick: () => router.push("/dashboard"),
+              variant: "primary" as const,
             },
             {
-              label: 'Demander l\'accès',
+              label: "Demander l'accès",
               onClick: () => {
                 // TODO: Implémenter la demande d'accès
-                console.log('Demande d\'accès pour:', userData?.uid);
+                console.log("Demande d'accès pour:", userData?.uid);
               },
-              variant: 'outline' as const,
+              variant: "outline" as const,
             },
           ],
         };
 
-      case 'USER_NOT_FOUND':
+      case "USER_NOT_FOUND":
         return {
-          title: 'Session expirée',
-          message: 'Votre session a expiré. Veuillez vous reconnecter.',
-          icon: '⏰',
+          title: "Session expirée",
+          message: "Votre session a expiré. Veuillez vous reconnecter.",
+          icon: "⏰",
           actions: [
             {
-              label: 'Se reconnecter',
-              onClick: () => router.push('/auth/login'),
-              variant: 'primary' as const,
+              label: "Se reconnecter",
+              onClick: () => router.push("/auth/login"),
+              variant: "primary" as const,
             },
           ],
         };
 
       default:
         return {
-          title: 'Une erreur est survenue',
-          message: 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
-          icon: '⚠️',
+          title: "Une erreur est survenue",
+          message: "Une erreur inattendue s'est produite. Veuillez réessayer.",
+          icon: "⚠️",
           actions: [
             {
-              label: 'Retour au tableau de bord',
-              onClick: () => router.push('/dashboard'),
-              variant: 'primary' as const,
+              label: "Retour au tableau de bord",
+              onClick: () => router.push("/dashboard"),
+              variant: "primary" as const,
             },
             {
-              label: 'Réessayer',
+              label: "Réessayer",
               onClick: () => reset(),
-              variant: 'outline' as const,
+              variant: "outline" as const,
             },
           ],
         };
@@ -136,4 +138,4 @@ export default function ProjectError({
       </div>
     </div>
   );
-} 
+}

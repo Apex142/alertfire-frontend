@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { Project } from '@/types/project';
-import { doc, getDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { isEqual } from 'lodash';
+import { create } from "zustand";
+import { Project } from "@/types/project";
+import { doc, getDoc, onSnapshot, Unsubscribe } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { isEqual } from "lodash";
 
 interface ActiveProjectState {
   projectId: string | null;
@@ -27,7 +27,7 @@ export const useActiveProjectStore = create<ActiveProjectState>((set, get) => ({
   unsubscribe: null,
 
   setActiveProject: async (projectId: string) => {
-    // Si on écoute déjà ce projet et qu'il est chargé, ne rien faire
+    // Si on écoute déjà ce project et qu'il est chargé, ne rien faire
     if (currentProjectId === projectId && get().project) {
       return;
     }
@@ -42,8 +42,8 @@ export const useActiveProjectStore = create<ActiveProjectState>((set, get) => ({
       currentProjectId = projectId;
       set({ projectId, isLoading: true, error: null });
 
-      // Vérifier d'abord si le projet existe
-      const docRef = doc(db, 'projects', projectId);
+      // Vérifier d'abord si le project existe
+      const docRef = doc(db, "projects", projectId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -51,12 +51,12 @@ export const useActiveProjectStore = create<ActiveProjectState>((set, get) => ({
         set({
           project: null,
           isLoading: false,
-          error: new Error('Projet non trouvé')
+          error: new Error("project non trouvé"),
         });
         return;
       }
 
-      // Si le projet existe, démarrer l'écoute en temps réel
+      // Si le project existe, démarrer l'écoute en temps réel
       let isFirstUpdate = true;
       unsubscribeListener = onSnapshot(
         docRef,
@@ -64,7 +64,7 @@ export const useActiveProjectStore = create<ActiveProjectState>((set, get) => ({
           if (doc.exists()) {
             const projectData = {
               id: doc.id,
-              ...doc.data()
+              ...doc.data(),
             } as Project;
 
             // Ne mettre à jour que si les données ont changé
@@ -78,29 +78,28 @@ export const useActiveProjectStore = create<ActiveProjectState>((set, get) => ({
             set({
               project: null,
               isLoading: false,
-              error: new Error('Projet non trouvé')
+              error: new Error("project non trouvé"),
             });
           }
         },
         (error) => {
-          console.error('Erreur de surveillance du projet:', error);
+          console.error("Erreur de surveillance du project:", error);
           currentProjectId = null;
           set({
             isLoading: false,
-            error: new Error('Erreur lors du chargement du projet')
+            error: new Error("Erreur lors du chargement du project"),
           });
         }
       );
 
       set({ unsubscribe: unsubscribeListener });
-
     } catch (error) {
-      console.error('Erreur lors de l\'initialisation du projet:', error);
+      console.error("Erreur lors de l'initialisation du project:", error);
       currentProjectId = null;
       set({
         project: null,
         isLoading: false,
-        error: new Error('Erreur lors du chargement du projet')
+        error: new Error("Erreur lors du chargement du project"),
       });
     }
   },
@@ -116,9 +115,9 @@ export const useActiveProjectStore = create<ActiveProjectState>((set, get) => ({
       project: null,
       isLoading: false,
       error: null,
-      unsubscribe: null
+      unsubscribe: null,
     });
-  }
+  },
 }));
 
 // Hook pour utiliser le store avec une API plus simple
@@ -131,4 +130,4 @@ export function useActiveProject() {
     setActiveProject: store.setActiveProject,
     clearActiveProject: store.clearActiveProject,
   };
-} 
+}

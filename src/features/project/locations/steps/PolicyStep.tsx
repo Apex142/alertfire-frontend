@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { StepProps } from '../types';
+import { motion } from "framer-motion";
+import { StepProps } from "../types";
 
 export function PolicyStep({ state, onChange }: StepProps) {
   return (
@@ -16,16 +16,18 @@ export function PolicyStep({ state, onChange }: StepProps) {
             <input
               type="radio"
               value="private"
-              checked={state.editPolicy === 'private'}
-              onChange={(e) => onChange({ editPolicy: e.target.value as 'private' })}
+              checked={state.editPolicy === "private"}
+              onChange={(e) =>
+                onChange({ editPolicy: e.target.value as "private" })
+              }
               className="mr-2"
             />
           </div>
           <div className="flex-1">
             <div className="font-medium text-gray-900">Privé</div>
             <p className="text-sm text-gray-500">
-              Accès restreint aux membres de l'entreprise et du projet.
-              Seuls les membres de l'entreprise peuvent modifier les informations.
+              Accès restreint aux membres de l'entreprise et du project. Seuls
+              les membres de l'entreprise peuvent modifier les informations.
             </p>
           </div>
         </label>
@@ -35,16 +37,19 @@ export function PolicyStep({ state, onChange }: StepProps) {
             <input
               type="radio"
               value="company"
-              checked={state.editPolicy === 'company'}
-              onChange={(e) => onChange({ editPolicy: e.target.value as 'company' })}
+              checked={state.editPolicy === "company"}
+              onChange={(e) =>
+                onChange({ editPolicy: e.target.value as "company" })
+              }
               className="mr-2"
             />
           </div>
           <div className="flex-1">
             <div className="font-medium text-gray-900">Entreprise</div>
             <p className="text-sm text-gray-500">
-              Lieu public visible par tous. Les modifications proposées par la communauté
-              doivent être approuvées par un membre de l'entreprise propriétaire.
+              Lieu public visible par tous. Les modifications proposées par la
+              communauté doivent être approuvées par un membre de l'entreprise
+              propriétaire.
             </p>
           </div>
         </label>
@@ -54,8 +59,10 @@ export function PolicyStep({ state, onChange }: StepProps) {
             <input
               type="radio"
               value="creativecommon"
-              checked={state.editPolicy === 'creativecommon'}
-              onChange={(e) => onChange({ editPolicy: e.target.value as 'creativecommon' })}
+              checked={state.editPolicy === "creativecommon"}
+              onChange={(e) =>
+                onChange({ editPolicy: e.target.value as "creativecommon" })
+              }
               className="mr-2"
             />
           </div>
@@ -63,11 +70,12 @@ export function PolicyStep({ state, onChange }: StepProps) {
             <div className="font-medium text-gray-900">Creative Commons</div>
             <p className="text-sm text-gray-500">
               Lieu public collaboratif, modifiable par tous les utilisateurs.
-              Fonctionne sur le principe du wiki, avec un historique des modifications.
+              Fonctionne sur le principe du wiki, avec un historique des
+              modifications.
             </p>
           </div>
         </label>
       </div>
     </motion.div>
   );
-} 
+}

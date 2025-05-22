@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { useProjectContext } from '@/app/projet/[id]/providers';
-import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { format, isValid, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { notify } from '@/lib/notify';
-import { Loading } from '@/components/ui/Loading';
+import React, { useState, useMemo } from "react";
+import { useProjectContext } from "@/app/project/[id]/providers";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { format, isValid, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
+import { notify } from "@/lib/notify";
+import { Loading } from "@/components/ui/Loading";
 
 interface Event {
   id: string;
@@ -18,13 +18,13 @@ interface Event {
 interface StepEventsProps {
   selectedEvents: string[];
   setSelectedEvents: (events: string[]) => void;
-  linkType: 'project' | 'events';
+  linkType: "project" | "events";
   onNext?: () => void;
 }
 
 function formatHour(time: string): string {
-  if (!time) return '';
-  const [h, m] = time.split(':');
+  if (!time) return "";
+  const [h, m] = time.split(":");
   return `${h}H${m}`;
 }
 
@@ -34,14 +34,19 @@ function formatDate(dateStr: string): string {
     if (!isValid(date)) {
       return dateStr;
     }
-    return format(date, 'EEEE d MMMM yyyy', { locale: fr });
+    return format(date, "EEEE d MMMM yyyy", { locale: fr });
   } catch (error) {
-    console.error('Erreur de formatage de date:', error);
+    console.error("Erreur de formatage de date:", error);
     return dateStr;
   }
 }
 
-export default function StepEvents({ selectedEvents, setSelectedEvents, linkType, onNext }: StepEventsProps) {
+export default function StepEvents({
+  selectedEvents,
+  setSelectedEvents,
+  linkType,
+  onNext,
+}: StepEventsProps) {
   const { events, loadingEvents } = useProjectContext();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,14 +64,14 @@ export default function StepEvents({ selectedEvents, setSelectedEvents, linkType
 
     return {
       eventsByDate: grouped,
-      uniqueDates: Object.keys(grouped).sort()
+      uniqueDates: Object.keys(grouped).sort(),
     };
   }, [events]);
 
   const handleEventToggle = (eventId: string) => {
     setSelectedEvents(
       selectedEvents.includes(eventId)
-        ? selectedEvents.filter(id => id !== eventId)
+        ? selectedEvents.filter((id) => id !== eventId)
         : [...selectedEvents, eventId]
     );
     setError(null);
@@ -74,8 +79,8 @@ export default function StepEvents({ selectedEvents, setSelectedEvents, linkType
 
   const handleNext = () => {
     if (selectedEvents.length === 0) {
-      setError('Veuillez sélectionner au moins un événement');
-      notify.error('Veuillez sélectionner au moins un événement');
+      setError("Veuillez sélectionner au moins un événement");
+      notify.error("Veuillez sélectionner au moins un événement");
       return;
     }
     onNext?.();
@@ -93,10 +98,14 @@ export default function StepEvents({ selectedEvents, setSelectedEvents, linkType
 
     return (
       <div>
-        <h3 className="font-medium mb-4">Sélectionnez une date pour voir les événements :</h3>
+        <h3 className="font-medium mb-4">
+          Sélectionnez une date pour voir les événements :
+        </h3>
         <div className="flex flex-wrap gap-3">
-          {uniqueDates.length === 0 && <div className="text-gray-500">Aucune date disponible.</div>}
-          {uniqueDates.map(date => (
+          {uniqueDates.length === 0 && (
+            <div className="text-gray-500">Aucune date disponible.</div>
+          )}
+          {uniqueDates.map((date) => (
             <Button
               key={date}
               variant="secondary"
@@ -138,7 +147,7 @@ export default function StepEvents({ selectedEvents, setSelectedEvents, linkType
           {formatDate(selectedDate)}
         </h4>
         <div className="space-y-2">
-          {eventsForDate.map(event => (
+          {eventsForDate.map((event) => (
             <div key={event.id} className="flex items-center space-x-2">
               <Checkbox
                 id={event.id}
@@ -146,7 +155,8 @@ export default function StepEvents({ selectedEvents, setSelectedEvents, linkType
                 onChange={() => handleEventToggle(event.id)}
               />
               <label htmlFor={event.id} className="text-sm">
-                {event.title} ({formatHour(event.start_time)} - {formatHour(event.end_time)})
+                {event.title} ({formatHour(event.start_time)} -{" "}
+                {formatHour(event.end_time)})
               </label>
             </div>
           ))}
@@ -164,4 +174,4 @@ export default function StepEvents({ selectedEvents, setSelectedEvents, linkType
       </div>
     </div>
   );
-} 
+}

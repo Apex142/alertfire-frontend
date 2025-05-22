@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { useRouter } from 'next/navigation';
-import { useUserData } from '@/hooks/useUserData';
+import { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
+import { useUserData } from "@/hooks/useUserData";
 
 export default function TeamError({
   error,
@@ -16,67 +16,69 @@ export default function TeamError({
   const { userData } = useUserData();
 
   useEffect(() => {
-    console.error('Erreur équipe:', error);
+    console.error("Erreur équipe:", error);
   }, [error]);
 
   const getErrorMessage = () => {
     switch (error.message) {
-      case 'ROLES_NOT_FOUND':
+      case "ROLES_NOT_FOUND":
         return {
-          title: 'Rôles non trouvés',
-          message: 'Impossible de charger les rôles de l\'équipe.',
-          icon: '👥',
+          title: "Rôles non trouvés",
+          message: "Impossible de charger les rôles de l'équipe.",
+          icon: "👥",
           actions: [
             {
-              label: 'Réessayer',
+              label: "Réessayer",
               onClick: () => reset(),
-              variant: 'primary' as const,
+              variant: "primary" as const,
             },
             {
-              label: 'Retour au projet',
+              label: "Retour au project",
               onClick: () => router.back(),
-              variant: 'outline' as const,
+              variant: "outline" as const,
             },
           ],
         };
 
-      case 'ACCESS_DENIED':
+      case "ACCESS_DENIED":
         return {
-          title: 'Accès refusé',
-          message: 'Vous n\'avez pas les droits nécessaires pour gérer l\'équipe.',
-          icon: '🔒',
+          title: "Accès refusé",
+          message:
+            "Vous n'avez pas les droits nécessaires pour gérer l'équipe.",
+          icon: "🔒",
           actions: [
             {
-              label: 'Retour au projet',
+              label: "Retour au project",
               onClick: () => router.back(),
-              variant: 'primary' as const,
+              variant: "primary" as const,
             },
             {
-              label: 'Demander l\'accès',
+              label: "Demander l'accès",
               onClick: () => {
                 // TODO: Implémenter la demande d'accès
-                console.log('Demande d\'accès pour:', userData?.uid);
+                console.log("Demande d'accès pour:", userData?.uid);
               },
-              variant: 'outline' as const,
+              variant: "outline" as const,
             },
           ],
         };
 
       default:
         return {
-          title: 'Une erreur est survenue',
-          message: 'Une erreur inattendue s\'est produite lors du chargement de l\'équipe.',
-          icon: '⚠️',
+          title: "Une erreur est survenue",
+          message:
+            "Une erreur inattendue s'est produite lors du chargement de l'équipe.",
+          icon: "⚠️",
           actions: [
             {
-              label: 'Réessayer',
+              label: "Réessayer",
               onClick: () => reset(),
-              variant: 'primary' as const,
+              variant: "primary" as const,
             },
             {
-              label: 'Retour au projet',
+              label: "Retour au project",
               onClick: () => router.back(),
-              variant: 'outline' as const,
+              variant: "outline" as const,
             },
           ],
         };
@@ -90,12 +92,8 @@ export default function TeamError({
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
           <div className="text-6xl mb-4">{icon}</div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            {title}
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {message}
-          </p>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">{title}</h2>
+          <p className="mt-2 text-sm text-gray-600">{message}</p>
         </div>
 
         <div className="mt-8 space-y-4">
@@ -121,4 +119,4 @@ export default function TeamError({
       </div>
     </div>
   );
-} 
+}
