@@ -11,8 +11,10 @@ import {
   MapPin,
   Menu,
   MessageCircle,
+  Moon,
   Plus,
   Settings,
+  Sun,
   User,
   Users,
 } from "lucide-react";
@@ -29,8 +31,28 @@ const Navbar = () => {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const menuRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
+
+  // Gestion du thème
+  useEffect(() => {
+    // Vérifie le thème système au chargement
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   // Ferme les menus au clic extérieur
   useEffect(() => {
@@ -72,11 +94,9 @@ const Navbar = () => {
   };
 
   // Helpers
-  const topGradient =
-    "bg-gradient-to-r from-[#233554] via-[#354178] to-[#3887c6]";
-  const bottomGradient =
-    "bg-gradient-to-r from-[#233554] via-[#354178] to-[#3887c6]";
-  const hoverText = "hover:text-[#a3c0ed]";
+  const topGradient = "bg-white dark:bg-primary-contrast";
+  const bottomGradient = "bg-white dark:bg-primary-contrast";
+  const hoverText = "hover:text-black/80 dark:hover:text-white/80";
   const isActive = (href: string) => pathname === href;
 
   // Badge notification stylé (blink centré, visible partout)
@@ -103,73 +123,93 @@ const Navbar = () => {
   return (
     <>
       {/* Navbar principale en haut */}
-      <nav className={`${topGradient} shadow-xl text-white sticky top-0 z-40`}>
-        <div className="flex justify-between items-center py-3 px-4 sm:px-8">
+      <nav className={`${topGradient} shadow-md text-black dark:text-white sticky top-0 z-40 transition-colors duration-200`}>
+        <div className="flex justify-between items-center py-2 px-4 sm:px-6">
           {/* Nom du site à gauche */}
           <Link
             href="/"
-            className="text-2xl font-extrabold tracking-tight select-none drop-shadow-lg"
+            className="text-xl font-bold tracking-tight select-none"
           >
             Showmate
           </Link>
 
           {/* Liens centraux */}
-          <div className="hidden md:flex flex-1 justify-center gap-5">
+          <div className="hidden md:flex flex-1 justify-center gap-4">
             <Link
               href="/"
-              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
-                isActive("/") ? "bg-white/15 shadow-inner" : hoverText
-              }`}
+              className={`flex items-center gap-2 text-base font-medium px-3 py-1.5 rounded-lg transition duration-150 ${isActive("/") ? "bg-black/5 dark:bg-white/10" : hoverText
+                }`}
             >
-              <Home className="w-5 h-5" /> Accueil
+              <Home className="w-4 h-4" /> Accueil
             </Link>
             <Link
               href="/reseau"
-              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
-                isActive("/reseau") ? "bg-white/15 shadow-inner" : hoverText
-              }`}
+              className={`flex items-center gap-2 text-base font-medium px-3 py-1.5 rounded-lg transition duration-150 ${isActive("/reseau") ? "bg-black/5 dark:bg-white/10" : hoverText
+                }`}
             >
-              <Users className="w-5 h-5" /> Réseau
+              <Users className="w-4 h-4" /> Réseau
             </Link>
             <Link
               href="/lieux"
-              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
-                isActive("/lieux") ? "bg-white/15 shadow-inner" : hoverText
-              }`}
+              className={`flex items-center gap-2 text-base font-medium px-3 py-1.5 rounded-lg transition duration-150 ${isActive("/lieux") ? "bg-black/5 dark:bg-white/10" : hoverText
+                }`}
             >
-              <MapPin className="w-5 h-5" /> Lieux
+              <MapPin className="w-4 h-4" /> Lieux
             </Link>
             <Link
               href="/profile"
-              className={`flex items-center gap-2 text-[1.13rem] font-medium px-3 py-2 rounded-xl transition duration-150 ${
-                isActive("/profile") ? "bg-white/15 shadow-inner" : hoverText
-              }`}
+              className={`flex items-center gap-2 text-base font-medium px-3 py-1.5 rounded-lg transition duration-150 ${isActive("/profile") ? "bg-black/5 dark:bg-white/10" : hoverText
+                }`}
             >
-              <User className="w-5 h-5" /> Profil
+              <User className="w-4 h-4" /> Profil
             </Link>
           </div>
 
           {/* Actions à droite */}
           {!user ? (
-            <div className="flex items-center">
+            <div className="flex items-center gap-2">
+              {/* Bouton thème */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                aria-label="Changer de thème"
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </button>
               {/* Connexion Desktop */}
               <button
                 onClick={() => router.push("/login")}
-                className="hidden md:flex py-2.5 px-5 rounded-xl font-medium text-base border border-white/80 bg-white/5 hover:bg-white/20 hover:text-[#233554] transition-all duration-150"
+                className="hidden md:flex py-1.5 px-4 rounded-lg font-medium text-sm border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all duration-150"
               >
-                <LogIn className="w-5 h-5 mr-2" />
+                <LogIn className="w-4 h-4 mr-2" />
                 Se connecter
               </button>
               {/* Connexion Mobile */}
               <button
                 onClick={() => router.push("/login")}
-                className="flex md:hidden items-center text-white hover:text-[#a3c0ed] transition"
+                className="flex md:hidden items-center text-black dark:text-white hover:text-black/80 dark:hover:text-white/80 transition"
               >
-                <LogIn className="w-8 h-8" />
+                <LogIn className="w-6 h-6" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* Bouton thème */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                aria-label="Changer de thème"
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </button>
               {/* Bouton Notifications Desktop */}
               <div className="hidden md:flex relative ml-1">
                 <NotificationButton />
@@ -180,31 +220,31 @@ const Navbar = () => {
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
-                  className="flex items-center gap-2 focus:outline-none hover:bg-white/15 rounded-full px-2.5 py-1.5 transition duration-150"
+                  className="flex items-center gap-2 focus:outline-none hover:bg-black/5 dark:hover:bg-white/10 rounded-lg px-2 py-1 transition duration-150"
                 >
                   {user?.photoURL ? (
                     <Image
                       src={user.photoURL}
                       alt="Avatar"
-                      width={38}
-                      height={38}
-                      className="rounded-full border-2 border-white/70 shadow"
+                      width={32}
+                      height={32}
+                      className="rounded-full border border-black/20 dark:border-white/50"
                     />
                   ) : (
-                    <User className="w-9 h-9 rounded-full border-2 border-white/70 shadow bg-gray-700 text-white p-1" />
+                    <User className="w-8 h-8 rounded-full border border-black/20 dark:border-white/50 bg-black/5 dark:bg-white/10 text-black dark:text-white p-1" />
                   )}
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-4 h-4" />
                 </button>
                 {/* Menu déroulant */}
                 {menuOpen && (
-                  <div className="absolute right-0 mt-3 w-56 bg-white/95 text-[#233554] rounded-xl shadow-2xl py-3 z-[1000] ring-1 ring-[#a3c0ed] animate-fade-in">
+                  <div className="absolute right-0 mt-3 w-56 bg-white/95 dark:bg-gray-800 text-[#233554] dark:text-white rounded-xl shadow-2xl py-3 z-[1000] ring-1 ring-[#a3c0ed] dark:ring-gray-600 animate-fade-in">
                     <div className="px-5 pb-2 text-base font-semibold">
                       {user?.email ? truncateEmail(user.email, 20) : "Invité"}
                     </div>
-                    <hr className="my-2 border-[#a3c0ed]" />
+                    <hr className="my-2 border-[#a3c0ed] dark:border-gray-600" />
                     <Link
                       href="/profile"
-                      className="block px-5 py-2 hover:bg-[#e5eaff] hover:text-[#233554] rounded flex items-center gap-2"
+                      className="block px-5 py-2 hover:bg-[#e5eaff] dark:hover:bg-gray-700 hover:text-[#233554] dark:hover:text-white rounded flex items-center gap-2"
                       onClick={() => setMenuOpen(false)}
                     >
                       <User className="w-5 h-5" />
@@ -212,7 +252,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                       href="/settings"
-                      className="block px-5 py-2 hover:bg-[#e5eaff] hover:text-[#233554] rounded flex items-center gap-2"
+                      className="block px-5 py-2 hover:bg-[#e5eaff] dark:hover:bg-gray-700 hover:text-[#233554] dark:hover:text-white rounded flex items-center gap-2"
                       onClick={() => setMenuOpen(false)}
                     >
                       <Settings className="w-5 h-5" />
@@ -224,7 +264,7 @@ const Navbar = () => {
                         await signOut();
                         router.push("/login");
                       }}
-                      className="w-full text-left px-5 py-2 hover:bg-[#e5eaff] hover:text-[#3887c6] flex items-center gap-2 text-[#3887c6] rounded"
+                      className="w-full text-left px-5 py-2 hover:bg-[#e5eaff] dark:hover:bg-gray-700 hover:text-[#3887c6] dark:hover:text-[#3887c6] flex items-center gap-2 text-[#3887c6] rounded"
                     >
                       <LogOut className="w-5 h-5" />
                       Déconnexion
@@ -239,67 +279,47 @@ const Navbar = () => {
 
       {/* Navbar Mobile (Bottom) */}
       <div
-        className={`${bottomGradient} z-[100] fixed bottom-0 w-full flex justify-around items-center py-4 md:hidden shadow-lg`}
+        className={`${bottomGradient} z-[100] fixed bottom-0 w-full flex justify-around items-center py-3 md:hidden shadow-lg transition-colors duration-200`}
       >
         <Link
           href="/dashboard"
-          className={`flex flex-col items-center gap-0.5 text-white ${
-            isActive("/dashboard") ? "text-[#a3c0ed]" : "hover:text-[#a3c0ed]"
-          }`}
+          className={`flex flex-col items-center gap-0.5 text-black dark:text-white ${isActive("/dashboard") ? "text-black/80 dark:text-white/80" : "hover:text-black/80 dark:hover:text-white/80"
+            }`}
         >
-          <LayoutDashboard className="w-7 h-7" />
-          <span className="text-[0.82rem] font-medium">Tableau</span>
+          <LayoutDashboard className="w-6 h-6" />
+          <span className="text-[0.75rem] font-medium">Tableau</span>
         </Link>
+
         <Link
-          href="/messages"
-          className={`flex flex-col items-center gap-0.5 text-white ${
-            isActive("/messages") ? "text-[#a3c0ed]" : "hover:text-[#a3c0ed]"
-          }`}
+          href="/reseau"
+          className={`flex flex-col items-center gap-0.5 text-black dark:text-white ${isActive("/reseau") ? "text-black/80 dark:text-white/80" : "hover:text-black/80 dark:hover:text-white/80"
+            }`}
         >
-          <MessageCircle className="w-7 h-7" />
-          <span className="text-[0.82rem] font-medium">Messages</span>
+          <Users className="w-6 h-6" />
+          <span className="text-[0.75rem] font-medium">Réseau</span>
         </Link>
+
+        <Link
+          href="/lieux"
+          className={`flex flex-col items-center gap-0.5 text-black dark:text-white ${isActive("/lieux") ? "text-black/80 dark:text-white/80" : "hover:text-black/80 dark:hover:text-white/80"
+            }`}
+        >
+          <MapPin className="w-6 h-6" />
+          <span className="text-[0.75rem] font-medium">Lieux</span>
+        </Link>
+
         <Link
           href="/notifications"
-          className={`flex flex-col items-center gap-0.5 text-white relative ${
-            isActive("/notifications")
-              ? "text-[#a3c0ed]"
-              : "hover:text-[#a3c0ed]"
-          }`}
+          className={`flex flex-col items-center gap-0.5 text-black dark:text-white relative ${isActive("/notifications") ? "text-black/80 dark:text-white/80" : "hover:text-black/80 dark:hover:text-white/80"
+            }`}
         >
           <span className="relative flex items-center justify-center">
-            <Bell className="w-7 h-7" />
+            <Bell className="w-6 h-6" />
             <NotificationBlink count={unreadCount} />
           </span>
-          <span className="text-[0.82rem] font-medium">Notifs</span>
+          <span className="text-[0.75rem] font-medium">Notifs</span>
         </Link>
-        {/* Bouton Plus */}
-        <button
-          ref={moreRef}
-          className={`flex flex-col items-center gap-0.5 text-white hover:text-[#a3c0ed] relative focus:outline-none`}
-          onClick={() => setMoreOpen((v) => !v)}
-        >
-          <Plus className="w-7 h-7" />
-          <span className="text-[0.82rem] font-medium">Plus</span>
-          {moreOpen && (
-            <div className="absolute bottom-14 right-0 bg-white text-[#233554] rounded-xl shadow-2xl py-2 w-32 z-[200] animate-fade-in ring-1 ring-[#a3c0ed]">
-              <Link
-                href="/reseau"
-                className="block px-4 py-2 hover:bg-[#e5eaff] rounded"
-                onClick={() => setMoreOpen(false)}
-              >
-                <Users className="inline w-4 h-4 mr-2" /> Réseau
-              </Link>
-              <Link
-                href="/lieux"
-                className="block px-4 py-2 hover:bg-[#e5eaff] rounded"
-                onClick={() => setMoreOpen(false)}
-              >
-                <MapPin className="inline w-4 h-4 mr-2" /> Lieux
-              </Link>
-            </div>
-          )}
-        </button>
+
       </div>
     </>
   );

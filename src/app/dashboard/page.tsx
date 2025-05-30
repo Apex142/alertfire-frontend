@@ -89,7 +89,7 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
-        <div className="w-64 border-r border-gray-200 p-4 bg-white">
+        <div className="hidden md:block w-64 border-r border-gray-200 p-4 bg-white">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-gray-900">Mes agendas</h2>
             <button
@@ -138,12 +138,6 @@ export default function DashboardPage() {
         <div className="flex-1 p-4">
           <div className="grid gap-6 w-full">
             <CustomProjectScheduler onProjectClick={handleProjectClick} />
-            <button
-              onClick={handleAddEvent}
-              className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
-            >
-              Créer un project
-            </button>
           </div>
         </div>
       </div>

@@ -30,6 +30,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
 import Modal from "../ui/Modal";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import {
+  Bell,
+  Calendar,
+  CalendarDays,
+  Columns4,
+  Grid3X3,
+  Home,
+  List,
+} from "lucide-react";
 
 interface Props {
   onProjectClick?: (projectId: string) => void;
@@ -148,7 +159,7 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
                   className={cn(
                     "text-sm font-medium",
                     isToday &&
-                      "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
+                    "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
                   )}
                 >
                   {format(day, "d")}
@@ -197,33 +208,21 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
   };
 
   const renderWeekView = () => {
-    {
-      /* CALENDRIER SEMAINE */
-    }
     const days = getWeekDays(currentDate);
-    const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8h à 20h
 
     return (
-      <div className="flex overflow-x-auto">
-        <div className="w-20 flex-shrink-0">
-          {hours.map((hour) => (
-            <div
-              key={hour}
-              className="h-16 border-b border-gray-200 p-1 text-sm text-gray-500"
-            >
-              {hour}h
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-1">
-          {days.map((day) => (
+      <div className="flex overflow-x-auto h-full">
+        {days.map((day) => {
+          const dayEvents = getEventsForDay(calendarProjects, day);
+          return (
             <div
               key={day.toISOString()}
-              className="flex-1 border-l border-gray-200"
+              className="flex-1 border-r border-gray-200"
             >
+              {/* En-tête du jour */}
               <div
                 className={cn(
-                  "border-b border-gray-200 p-2 text-center",
+                  "border-b border-gray-200 p-2 text-center h-16",
                   isCurrentDay(day) && "bg-blue-50"
                 )}
               >
@@ -234,66 +233,56 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
                   className={cn(
                     "text-sm text-gray-500",
                     isCurrentDay(day) &&
-                      "mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white mx-auto"
+                    "mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white mx-auto"
                   )}
                 >
                   {format(day, "d")}
                 </div>
               </div>
-              <div className="relative">
-                {hours.map((hour) => {
-                  const hourEvents = getEventsForTimeRange(
-                    calendarProjects,
-                    day,
-                    hour
-                  );
-                  return (
-                    <div key={hour} className="h-16 border-b border-gray-200">
-                      {hourEvents.map((event) => (
-                        <Link
-                          key={event.id}
-                          href={`/project/${event.id}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onProjectClick?.(event.id);
-                          }}
-                          className="block"
-                        >
-                          <div
-                            className={cn(
-                              "absolute left-1 right-1 cursor-pointer rounded p-1 text-xs",
-                              event.color,
-                              "hover:opacity-80"
-                            )}
-                            style={{
-                              top: "4px",
-                              height: "calc(100% - 8px)",
-                            }}
-                          >
-                            <div className="flex items-center gap-1">
-                              <span className="h-2 w-2 rounded-full bg-white" />
-                              <span className="truncate font-medium">
-                                {event.name}
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
+
+              {/* Liste des projets du jour */}
+              <div className="p-2 space-y-2">
+                {dayEvents.map((event) => (
+                  <Link
+                    key={event.id}
+                    href={`/project/${event.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onProjectClick?.(event.id);
+                    }}
+                    className="block"
+                  >
+                    <div
+                      className={cn(
+                        "cursor-pointer rounded p-2 text-sm",
+                        event.color,
+                        "hover:opacity-80"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-white" />
+                        <span className="font-medium text-white">
+                          {event.name}
+                        </span>
+                      </div>
+                      {event.startDate && (
+                        <div className="text-xs text-white/80 mt-1">
+                          {format(event.startDate, "HH:mm")}
+                          {event.endDate && ` - ${format(event.endDate, "HH:mm")}`}
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
+                  </Link>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     );
   };
 
   const renderListView = () => {
-    {
-      /* LISTE DES projectS */
-    }
     const sortedProjects = sortEventsByDate(calendarProjects);
 
     return (
@@ -363,64 +352,96 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.16)-1px)] -m-4 p-[10px]">
+    <div className="flex flex-col h-[calc(100vh-theme(spacing.16)-1px)] md:h-[calc(100vh-theme(spacing.16)-1px)] h-[calc(100vh-theme(spacing.16)-1px-68px)] -m-4 p-[10px]">
       <div className="flex items-center justify-between px-4 py-2 flex-shrink-0">
-        {/* Navigation centrée */}
-        <div className="flex-1 flex justify-center">
+        {/* Navigation et contrôles sur une seule ligne */}
+        <div className="flex items-center gap-2 flex-1">
           {(view === "month" || view === "week") && (
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrevious}
-                className="rounded-lg p-3 text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
+                className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
                 aria-label="Mois/Semaine précédente"
               >
                 ←
               </button>
               <button
                 onClick={handleToday}
-                className="rounded-md px-3 py-1 text-sm font-medium text-gray-600 hover:cursor-pointer hover:bg-gray-100"
+                className="rounded-md p-2 hover:text-primary hover:bg-gray-100 hover:cursor-pointer flex items-center transition-colors"
+                aria-label="Retour à aujourd'hui"
               >
-                Aujourd'hui
+                <CalendarDays className="w-4 h-4" />
               </button>
-              <span className="font-medium text-lg">
+              <span className="font-medium text-sm md:text-lg whitespace-nowrap">
                 {view === "month"
                   ? format(currentDate, "MMMM yyyy", { locale: fr })
                   : `Semaine du ${format(
-                      getWeekDays(currentDate)[0],
-                      "d MMMM",
-                      { locale: fr }
-                    )}`}
+                    getWeekDays(currentDate)[0],
+                    "d MMMM",
+                    { locale: fr }
+                  )}`}
               </span>
               <button
                 onClick={handleNext}
-                className="rounded-lg p-3 text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
+                className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
                 aria-label="Mois/Semaine suivante"
               >
                 →
               </button>
             </div>
           )}
+          {view === "list" && (
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Liste des projets
+              </h2>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {calendarProjects.length} projet{calendarProjects.length > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
         </div>
-        {/* Boutons de vue alignés à droite */}
-        <div className="flex space-x-1 justify-end">
-          {(["month", "week", "list"] as CalendarView[]).map((viewType) => (
+
+        {/* Boutons de vue */}
+        <div className="flex space-x-1">
+          <div className="flex space-x-1">
             <button
-              key={viewType}
-              onClick={() => setView(viewType)}
+              onClick={() => setView("month")}
               className={cn(
-                "rounded-md px-4 py-1.5 text-sm font-medium transition-colors hover:cursor-pointer",
-                view === viewType
+                "rounded-md p-2 text-sm font-medium transition-colors hover:cursor-pointer",
+                view === "month"
                   ? "bg-primary text-white"
                   : "text-gray-600 hover:bg-gray-100"
               )}
+              aria-label="Vue mois"
             >
-              {viewType === "month"
-                ? "Mois"
-                : viewType === "week"
-                ? "Semaine"
-                : "Liste"}
+              <Grid3X3 className="w-5 h-5" />
             </button>
-          ))}
+            <button
+              onClick={() => setView("week")}
+              className={cn(
+                "rounded-md p-2 text-sm font-medium transition-colors hover:cursor-pointer",
+                view === "week"
+                  ? "bg-primary text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              )}
+              aria-label="Vue semaine"
+            >
+              <Columns4 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={cn(
+                "rounded-md p-2 text-sm font-medium transition-colors hover:cursor-pointer",
+                view === "list"
+                  ? "bg-primary text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              )}
+              aria-label="Vue liste"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
       <div className="bg-white border border-gray-200 flex-1 overflow-auto">
@@ -459,7 +480,7 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
                           className={cn(
                             "text-sm font-medium",
                             isToday &&
-                              "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
+                            "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
                           )}
                         >
                           {format(day, "d")}
@@ -523,11 +544,11 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
           initialDate={
             selectedDate
               ? (() => {
-                  const d = new Date(selectedDate);
-                  d.setHours(0, 0, 0, 0);
-                  d.setHours(d.getHours() + 2);
-                  return d;
-                })()
+                const d = new Date(selectedDate);
+                d.setHours(0, 0, 0, 0);
+                d.setHours(d.getHours() + 2);
+                return d;
+              })()
               : undefined
           }
         />
