@@ -2,9 +2,10 @@
 
 import { Loading } from "@/components/ui/Loading";
 import ProjectDashboardClient from "@/features/project/dashboard/ProjectDashboardClient";
-import { useActiveProject } from "@/stores/useActiveProjectStore";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import Layout from "./layout";
+import { useActiveProjectStore } from "./useActiveProjectStore";
 
 interface ProjectDashboardWrapperProps {
   projectId: string;
@@ -15,7 +16,8 @@ export default function ProjectDashboardWrapper({
 }: ProjectDashboardWrapperProps) {
   const router = useRouter();
   const [retryCount, setRetryCount] = useState(0);
-  const { project, isLoading, error, setActiveProject } = useActiveProject();
+  const { project, isLoading, error, setActiveProject } =
+    useActiveProjectStore();
   const initRef = useRef(false);
   const initializationRef = useRef<Promise<void> | null>(null);
 
@@ -28,6 +30,10 @@ export default function ProjectDashboardWrapper({
 
       try {
         initializationRef.current = setActiveProject(projectId);
+        console.log(
+          `ProjectDashboardWrapper: Initializing project with ID ${projectId}`
+        );
+
         await initializationRef.current;
         initRef.current = true;
       } catch (err) {
@@ -61,30 +67,28 @@ export default function ProjectDashboardWrapper({
     return () => clearTimeout(timer);
   }, [error, projectId, retryCount, router, setActiveProject]);
 
-  if (!projectId) {
-    return null;
-  }
+  let content = null;
 
-  if (isLoading) {
-    return (
+  if (!projectId) {
+    content = null;
+  } else if (isLoading) {
+    content = (
       <div className="flex items-center justify-center min-h-screen">
         <Loading
           message={
             retryCount > 0
               ? `Nouvelle tentative (${retryCount}/3)...`
-              : "Chargement du project..."
+              : "Chargement du projet..."
           }
           size="lg"
         />
       </div>
     );
-  }
-
-  if (error && retryCount >= 3) {
-    return (
+  } else if (error && retryCount >= 3) {
+    content = (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="text-red-500 text-xl mb-4">
-          Une erreur est survenue lors du chargement du project
+          Une erreur est survenue lors du chargement du projet
         </div>
         <p className="text-gray-600 mb-4">{error.message}</p>
         <div className="space-x-4">
@@ -102,16 +106,20 @@ export default function ProjectDashboardWrapper({
             onClick={() => router.push("/projects")}
             className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
           >
-            Retourner à la liste des projects
+            Retourner à la liste des projets
           </button>
         </div>
       </div>
     );
+  } else if (!project) {
+    content = <div>Projet introuvable.</div>;
+  } else {
+    content = <ProjectDashboardClient project={project} />;
   }
 
-  if (!project) {
-    return null;
+  if (!project?.id) {
+    return content;
   }
 
-  return <ProjectDashboardClient project={project} />;
+  return <Layout params={{ id: project.id }}>{content}</Layout>;
 }

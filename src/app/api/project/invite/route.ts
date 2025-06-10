@@ -1,206 +1,138 @@
-import { invitationEmailHtml } from "@/emailTemplates/invitationEmail";
-import { auth, db } from "@/lib/firebaseAdmin";
-import { FieldValue } from "firebase-admin/firestore";
+import {
+  AppError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "@/lib/error";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { InvitationSchema } from "@/types/dtos/invitation.dto";
+import { EmailType } from "@/types/enums/EmailType";
+import { ProjectMemberPermission } from "@/types/enums/ProjectMemberPermission";
+import { ProjectMemberStatus } from "@/types/enums/ProjectMemberStatus";
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { EmailService } from "../../email/EmailService.server";
+import { NotificationService } from "../../notif/NotificationService";
 
-// POST /api/project/invite
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-    }
-    const idToken = authHeader.split(" ")[1];
-    const decodedToken = await auth.verifyIdToken(idToken);
-
-    // --- Body parsing ---
-    const body = await req.json();
-    const {
-      projectId,
-      role,
-      linkType,
-      selectedEvents = [],
-      status = "pending",
-      technicianUid,
-      invitedByUid,
-      projectName,
-    } = body || {};
-
-    // --- Check des paramètres obligatoires ---
-    if (
-      !projectId ||
-      !role ||
-      !role.label ||
-      !role.id ||
-      !technicianUid ||
-      !invitedByUid ||
-      !projectName
-    ) {
+    // 1. Authentification
+    const idToken = req.headers.get("authorization")?.split("Bearer ")[1];
+    if (!idToken) {
       return NextResponse.json(
-        { error: "Paramètres manquants ou invalides." },
+        { error: "Jeton d'authentification manquant." },
+        { status: 401 }
+      );
+    }
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+
+    // 2. Validation des données
+    const body = await req.json();
+    const validation = InvitationSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: "Données de la requête invalides.",
+          details: validation.error.flatten(),
+        },
         { status: 400 }
       );
     }
+    const invitationData = validation.data;
 
-    if (decodedToken.uid !== invitedByUid) {
-      return NextResponse.json({ error: "Action interdite" }, { status: 403 });
-    }
-
-    // --- Récupération de l'utilisateur à inviter ---
-    const userDoc = await db.collection("users").doc(technicianUid).get();
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: "Technicien non trouvé" },
-        { status: 404 }
+    // 3. Vérification de l'expéditeur
+    if (decodedToken.uid !== invitationData.invitedByUid) {
+      throw new ForbiddenError(
+        "L'utilisateur authentifié ne correspond pas à l'expéditeur de l'invitation."
       );
     }
-    const userData = userDoc.data();
 
-    // --- Création ou récupération membership ---
-    let membershipId = null;
-    const membershipQuery = await db
+    // 4. Récupération de l'utilisateur invité
+    const userSnap = await adminDb
+      .collection("users")
+      .doc(invitationData.technicianUid)
+      .get();
+    if (!userSnap.exists) {
+      throw new NotFoundError("L'utilisateur à inviter n'a pas été trouvé.");
+    }
+    const userToInvite = { uid: userSnap.id, ...userSnap.data() };
+
+    // 5. Vérifie s'il existe déjà un membership
+    const membershipQuery = await adminDb
       .collection("project_memberships")
-      .where("userId", "==", technicianUid)
-      .where("projectId", "==", projectId)
+      .where("projectId", "==", invitationData.projectId)
+      .where("userId", "==", invitationData.technicianUid)
       .limit(1)
       .get();
-
-    if (!membershipQuery.empty) {
-      const membership = membershipQuery.docs[0].data();
-      // Si déjà invité et en attente : erreur explicite
-      if (membership.status !== undefined) {
-        return NextResponse.json(
-          {
-            error: "Ce technicien est déjà invité.",
-          },
-          { status: 409 }
-        );
-      }
-      // Sinon, tu peux continuer (s'il a été refusé, retiré, etc. tu peux le réinviter)
-      membershipId = membershipQuery.docs[0].id;
-    } else {
-      // Création classique du membership
-      const docRef = await db.collection("project_memberships").add({
-        userId: technicianUid,
-        projectId,
-        role: role.label,
-        status,
-        isGlobal: linkType === "project",
-        eventIds: linkType === "events" ? selectedEvents : null,
-        firstname: userData?.firstName || "",
-        lastname: userData?.lastName || "",
-        email: userData?.email || "",
-        phone: userData?.phone || "",
-        photo_url: userData?.photoURL || "",
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-      membershipId = docRef.id;
+    const existingMembership = !membershipQuery.empty
+      ? { id: membershipQuery.docs[0].id, ...membershipQuery.docs[0].data() }
+      : null;
+    if (
+      existingMembership &&
+      [ProjectMemberStatus.APPROVED, ProjectMemberStatus.PENDING].includes(
+        existingMembership.status
+      )
+    ) {
+      throw new ConflictError(
+        "Cet utilisateur est déjà membre ou a une invitation en attente."
+      );
     }
 
-    // --- Update events ---
-    if (linkType === "events" && selectedEvents.length > 0 && membershipId) {
-      for (const eventId of selectedEvents) {
-        if (!eventId) continue;
-        const eventRef = db.doc(`projects/${projectId}/events/${eventId}`);
-        await eventRef.update({
-          members: FieldValue.arrayUnion(membershipId),
-        });
-      }
-    }
-
-    // --- Create post ---
-    const postsRef = db.collection(`projects/${projectId}/posts`);
-    await postsRef.add({
-      isGlobal: linkType === "project",
-      eventId: linkType === "events" ? selectedEvents[0] || "" : "",
-      createdBy: technicianUid,
-      title: role.label,
-      icon: role.icon || "",
-      priority: role.priority || 0,
-      category: role.category || "",
-      memberIds: [technicianUid],
-      role_template_id: role.id,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+    // 6. Crée le membership
+    const isPending = invitationData.status === ProjectMemberStatus.PENDING;
+    const membershipRef = await adminDb.collection("project_memberships").add({
+      userId: invitationData.technicianUid,
+      projectId: invitationData.projectId,
+      role: invitationData.role.label,
+      permission: ProjectMemberPermission.VIEWER,
+      status: isPending
+        ? ProjectMemberStatus.PENDING
+        : ProjectMemberStatus.APPROVED,
+      invitedBy: invitationData.invitedByUid,
+      joinedAt: new Date(),
     });
+    const newMembershipSnap = await membershipRef.get();
+    const newMembership = { id: membershipRef.id, ...newMembershipSnap.data() };
 
-    // --- Create notification ---
-    if (status === "pending") {
-      await db.collection("notifications").add({
-        userId: technicianUid,
-        projectId,
-        message: `Vous avez été invité à rejoindre le projet ${projectName} en tant que ${role.label}`,
-        type: "project_invite",
-        read: false,
-        responded: false,
-        createdAt: FieldValue.serverTimestamp(),
-        context: {
-          invitedBy: invitedByUid,
-          role: role.label,
-        },
-      });
-    }
-
-    // --- Send mail via Nodemailer ---
-    if (userData?.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
-      try {
-        const acceptUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/project/${projectId}/invitations/accept?user=${technicianUid}&project=${projectId}`;
-
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT) || 587,
-          secure: process.env.SMTP_SECURE === "true",
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-          },
-        });
-
-        const mailOptions = {
-          from: process.env.SMTP_FROM_EMAIL,
-          to: userData.email,
-          subject: `Invitation au projet ${projectName}`,
-          text: `Bonjour ${userData.firstName || ""},
-
-Vous avez été invité à rejoindre le projet "${projectName}" en tant que ${
-            role.label
-          }.
-
-Acceptez l'invitation en cliquant sur ce lien : ${acceptUrl}
-
-Si vous n'avez pas demandé cette invitation, ignorez cet email.`,
-          html: invitationEmailHtml({
-            firstName: userData.firstName || "",
-            projectName,
-            roleLabel: role.label,
-            acceptUrl,
-          }),
-        };
-
-        await transporter.sendMail(mailOptions);
-      } catch (mailError) {
-        // On log, mais on ne bloque pas l'invitation Firestore
-        console.warn(
-          "[Invitation] Email non envoyé pour l'utilisateur",
-          userData.email,
-          "Erreur:",
-          mailError?.message
-        );
-      }
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error(
-      "Erreur POST /api/project/invite :",
-      error,
-      error?.message,
-      error?.stack
+    // 7. Crée la notification via le service (admin/server only)
+    const notificationService = new NotificationService();
+    await notificationService.createProjectInviteNotification(
+      userToInvite,
+      invitationData
     );
+
+    // 8. Envoi de l'email d'invitation via EmailService factorisé
+    const emailType = isPending
+      ? EmailType.PROJECT_INVITATION_PENDING
+      : EmailType.PROJECT_INVITATION;
+    const userData = userSnap.data() || {};
+    const emailData = {
+      firstName: userData.firstName || userData.displayName || "",
+      projectName: invitationData.projectName,
+      roleLabel: invitationData.role.label,
+      acceptUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/project/${invitationData.projectId}/invitations/accept?membership=${newMembership.id}`,
+    };
+
+    const emailService = new EmailService();
+    await emailService.sendTransactionalEmail(
+      emailType,
+      userData.email,
+      emailData
+    );
+
     return NextResponse.json(
-      { error: "Erreur serveur", message: error?.message },
+      { success: true, message: "Invitation envoyée avec succès." },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("[API_INVITE_ERROR]", error);
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
+    }
+    return NextResponse.json(
+      { error: "Une erreur interne est survenue." },
       { status: 500 }
     );
   }

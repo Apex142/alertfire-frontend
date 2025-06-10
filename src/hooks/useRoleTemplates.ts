@@ -1,52 +1,37 @@
 // src/hooks/useRoleTemplates.ts
-import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+
+import { roleTemplateService } from "@/services/RoleTemplateService";
+import { RoleTemplate } from "@/types/entities/RoleTemplate";
 import { useEffect, useState } from "react";
 
-export interface RoleTemplate {
-  id: string;
-  label: string;
-  category: string;
-  icon: string;
-  priority?: number;
-}
-
+/**
+ * Hook refactorisé pour récupérer les modèles de rôle via le RoleTemplateService.
+ */
 export function useRoleTemplates() {
   const [roles, setRoles] = useState<RoleTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let unmounted = false;
-
-    async function fetchRoles() {
+    // La logique de fetch est maintenant beaucoup plus propre.
+    const fetchRoles = async () => {
       setLoading(true);
       setError(null);
       try {
-        const snap = await getDocs(collection(db, "role_templates"));
-        const data = snap.docs.map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as RoleTemplate)
+        const templates = await roleTemplateService.getAllTemplates();
+        setRoles(templates);
+      } catch (e: any) {
+        setError(
+          e.message || "Une erreur est survenue lors du chargement des rôles."
         );
-        if (!unmounted) setRoles(data);
-      } catch (e) {
-        const errorMessage =
-          e instanceof Error
-            ? e.message
-            : "Erreur lors du chargement des rôles";
-        if (!unmounted) setError(errorMessage);
       } finally {
-        if (!unmounted) setLoading(false);
+        setLoading(false);
       }
-    }
+    };
 
     fetchRoles();
-    return () => {
-      unmounted = true;
-    };
+
+    // La dépendance vide [] assure que l'effet ne s'exécute qu'une seule fois au montage.
   }, []);
 
   return { roles, loading, error };

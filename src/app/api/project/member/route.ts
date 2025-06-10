@@ -1,5 +1,5 @@
 import { memberRemovedEmailHtml } from "@/emailTemplates/memberRemovedEmail";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
@@ -25,18 +25,18 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Récupérer infos utilisateur
-    const userDoc = await db.collection("users").doc(userId).get();
+    const userDoc = await adminDb.collection("users").doc(userId).get();
     const user = userDoc.data();
     const email = user?.email;
     const firstName = user?.firstName || "";
 
     // Suppression du membership
-    await db.collection("project_memberships").doc(membershipId).delete();
+    await adminDb.collection("project_memberships").doc(membershipId).delete();
 
     // Optionnel: Remove from events "members" array if needed
 
     // Notification (ajoute si tu veux dans ta bdd)
-    await db.collection("notifications").add({
+    await adminDb.collection("notifications").add({
       userId,
       projectId,
       type: "project_removed",

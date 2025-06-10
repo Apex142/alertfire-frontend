@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { useUserData } from "@/hooks/useUserData";
+import { useEffect } from "react";
 
 export default function TeamError({
   error,
@@ -13,7 +13,7 @@ export default function TeamError({
   reset: () => void;
 }) {
   const router = useRouter();
-  const { userData } = useUserData();
+  const { appUser } = useAuth();
 
   useEffect(() => {
     console.error("Erreur équipe:", error);
@@ -56,7 +56,7 @@ export default function TeamError({
               label: "Demander l'accès",
               onClick: () => {
                 // TODO: Implémenter la demande d'accès
-                console.log("Demande d'accès pour:", userData?.uid);
+                console.log("Demande d'accès pour:", appUser?.uid);
               },
               variant: "outline" as const,
             },

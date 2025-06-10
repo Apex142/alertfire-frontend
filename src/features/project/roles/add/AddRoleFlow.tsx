@@ -1,7 +1,8 @@
+import { useActiveProjectStore } from "@/app/project/[id]/useActiveProjectStore";
 import { Button } from "@/components/ui/Button";
 import Stepper from "@/components/ui/Stepper";
 import { notify } from "@/lib/notify";
-import { useActiveProject } from "@/stores/useActiveProjectStore";
+import { ProjectMemberStatus } from "@/types/enums/ProjectMemberStatus";
 import { getAuth } from "firebase/auth";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -20,7 +21,7 @@ export default function AddRoleFlow({
   onSuccess,
   projectId,
 }: AddRoleFlowProps) {
-  const { project, setActiveProject } = useActiveProject();
+  const { project, setActiveProject } = useActiveProjectStore();
 
   const [step, setStep] = useState(0);
   const [role, setRole] = useState<any>(null);
@@ -155,7 +156,10 @@ export default function AddRoleFlow({
           role,
           linkType,
           selectedEvents,
-          status: selectedAction === "force" ? "approved" : "pending",
+          status:
+            selectedAction === "force"
+              ? ProjectMemberStatus.APPROVED
+              : ProjectMemberStatus.PENDING,
           technicianUid: technician.uid,
           invitedByUid: currentUserId,
           projectName: project?.projectName,

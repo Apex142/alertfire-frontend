@@ -1,5 +1,4 @@
 import NotificationList from "@/components/NotificationList";
-import { Notification } from "@/types/notification";
 import { useState } from "react";
 
 type Props = {

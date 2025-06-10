@@ -1,4 +1,4 @@
-export function invitationEmailHtml({
+export function invitationEmailTemplate({
   firstName,
   projectName,
   roleLabel,

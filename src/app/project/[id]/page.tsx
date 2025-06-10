@@ -24,7 +24,7 @@ export default function ProjectPage({ params }: Props) {
         </div>
       }
     >
-      <ProjectDashboardWrapper projectId={params.id} />
+      <ProjectDashboardWrapper projectId={params.id} />;
     </Suspense>
   );
 }

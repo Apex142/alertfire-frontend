@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/hooks/useCompany";
-import { useUserData } from "@/hooks/useUserData";
 import { useState } from "react";
 
 interface EmptyStateProps {
@@ -14,8 +14,8 @@ export default function EmptyState({
   onAddEvent,
   onDuplicatePlanning,
 }: EmptyStateProps) {
-  const { userData } = useUserData();
-  const companyId = userData?.companySelected;
+  const { appUser } = useAuth();
+  const companyId = appUser?.companySelected;
 
   // Maintenant, tu as tout d'un coup :
   const { projects, loading, error } = useCompany(companyId);

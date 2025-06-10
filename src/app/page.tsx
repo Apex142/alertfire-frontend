@@ -1,39 +1,60 @@
-'use client';
+// src/app/page.tsx (ou le chemin vers votre page d'accueil/login)
+"use client";
 
-import LoginForm from '@/components/auth/LoginForm';
-import SignupForm from '@/components/auth/SignupForm';
-import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { Loading } from '@/components/ui/Loading';
+import LoginForm from "@/components/auth/LoginForm"; // Assurez-vous que ce chemin est correct
+import SignupForm from "@/components/auth/SignupForm"; // Assurez-vous que ce chemin est correct
+import { Loading } from "@/components/ui/Loading"; // Assurez-vous que ce chemin est correct
+import { useAuth } from "@/contexts/AuthContext"; // <--- CORRIGÉ: Utiliser useAuth
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default function Home() {
+export default function HomePage() {
+  // Renommé en HomePage pour plus de clarté si c'est la page d'accueil
   const [showSignup, setShowSignup] = useState(false);
-  const { user, loading: authLoading } = useAuth();
+  // Extrait appUser, firebaseUser et loading de useAuth
+  const { appUser, firebaseUser, loading } = useAuth();
   const router = useRouter();
 
-  // Rediriger vers le dashboard si l'utilisateur est connecté
-  if (user) {
-    router.push('/dashboard');
-    return null;
-  }
+  // Détermine si l'utilisateur est authentifié
+  const isAuthenticated = !!(appUser || firebaseUser);
 
-  // Afficher un loader si l'authentification est en cours de chargement
-  if (authLoading) {
+  // Rediriger si connecté, mais **uniquement après le loading**
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, loading, router]);
+
+  // Afficher un loader si l'auth est en cours de vérification
+  if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background dark:bg-gray-900">
+        {/* Assurez-vous que bg-background est défini dans votre Tailwind config ou global.css */}
         <Loading message="Chargement..." size="lg" />
       </div>
     );
   }
 
+  // Si l'utilisateur est authentifié et que le chargement est terminé,
+  // on retourne null pour laisser useEffect gérer la redirection.
+  // Cela évite d'afficher brièvement le formulaire de connexion/inscription.
+  if (isAuthenticated) {
+    return null;
+  }
+
+  // Si le chargement est terminé et l'utilisateur n'est pas authentifié, afficher les formulaires.
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 py-12 px-4 dark:bg-gray-900 sm:px-6 lg:px-8">
+      {/* J'ai changé bg-background en bg-gray-100 pour un fond clair standard, ajustez selon votre thème */}
+      <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Showmate</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {showSignup ? 'Créez votre compte' : 'Connectez-vous à votre compte'}
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+            Showmate {/* Ou le nom de votre application */}
+          </h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            {showSignup
+              ? "Créez votre compte pour commencer"
+              : "Connectez-vous à votre compte"}
           </p>
         </div>
 
@@ -42,6 +63,31 @@ export default function Home() {
         ) : (
           <LoginForm onSwitchToSignup={() => setShowSignup(true)} />
         )}
+
+        {/* Optionnel: Lien pour basculer manuellement si les formulaires ne l'incluent pas déjà */}
+        <div className="text-center text-sm">
+          {showSignup ? (
+            <p className="text-gray-600 dark:text-gray-400">
+              Déjà un compte ?{" "}
+              <button
+                onClick={() => setShowSignup(false)}
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+              >
+                Se connecter
+              </button>
+            </p>
+          ) : (
+            <p className="text-gray-600 dark:text-gray-400">
+              Pas encore de compte ?{" "}
+              <button
+                onClick={() => setShowSignup(true)}
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+              >
+                S'inscrire
+              </button>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

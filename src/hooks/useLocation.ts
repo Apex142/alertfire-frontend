@@ -1,6 +1,8 @@
-import { FirestoreDataConverter, Timestamp } from 'firebase/firestore';
-import { useFirestoreDoc } from './useFirestoreDoc';
-import { Location } from '@/types/location';
+import { FirestoreDataConverter, Timestamp } from "firebase/firestore";
+import { useFirestoreDoc } from "./useFirestoreDoc";
+import { Location } from "@/types/location";
+
+// TO MODIFY: Add any additional fields or types as needed, BIG PROBLEMS HERE
 
 const locationConverter: FirestoreDataConverter<Location> = {
   toFirestore: (location: Location) => {
@@ -26,12 +28,18 @@ const locationConverter: FirestoreDataConverter<Location> = {
       label: data.label,
       address: data.address,
       notes: data.notes,
-      createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
-      updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
+      createdAt:
+        data.createdAt instanceof Timestamp
+          ? data.createdAt.toDate()
+          : new Date(data.createdAt),
+      updatedAt:
+        data.updatedAt instanceof Timestamp
+          ? data.updatedAt.toDate()
+          : new Date(data.updatedAt),
       projectId: data.projectId,
       companyId: data.companyId,
       coordinates: data.coordinates || null,
-      type: data.type || 'other',
+      type: data.type || "other",
       capacity: data.capacity || null,
       amenities: data.amenities || [],
       contacts: data.contacts || [],
@@ -45,9 +53,12 @@ interface UseLocationOptions {
   cacheTTL?: number;
 }
 
-export function useLocation(locationId: string, options: UseLocationOptions = {}) {
-  return useFirestoreDoc<Location>('locations', locationId, {
+export function useLocation(
+  locationId: string,
+  options: UseLocationOptions = {}
+) {
+  return useFirestoreDoc<Location>("locations", locationId, {
     ...options,
     converter: locationConverter,
   });
-} 
+}

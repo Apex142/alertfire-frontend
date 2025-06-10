@@ -1,12 +1,12 @@
 import { deleteProjectEmailHtml } from "@/emailTemplates/deleteProjectEmail";
-import { auth, db } from "@/lib/firebaseAdmin";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
 // Utilitaire : suppression en masse d'une collection
 async function deleteCollection(path: string) {
-  const snap = await db.collection(path).get();
-  const batch = db.batch();
+  const snap = await adminDb.collection(path).get();
+  const batch = adminDb.batch();
   snap.docs.forEach((doc) => batch.delete(doc.ref));
   await batch.commit();
 }
@@ -19,7 +19,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
     const idToken = authHeader.split(" ")[1];
-    await auth.verifyIdToken(idToken);
+    await adminAuth.verifyIdToken(idToken);
 
     // --- Récupère le projectId depuis la query ---
     const { searchParams } = new URL(req.url);
@@ -33,7 +33,10 @@ export async function DELETE(req: NextRequest) {
     }
 
     // --- Récupère le projet ---
-    const projectSnap = await db.collection("projects").doc(projectId).get();
+    const projectSnap = await adminDb
+      .collection("projects")
+      .doc(projectId)
+      .get();
     if (!projectSnap.exists) {
       return NextResponse.json(
         { error: "Projet introuvable" },
@@ -44,7 +47,7 @@ export async function DELETE(req: NextRequest) {
     const projectName = projectData?.projectName || "Projet supprimé";
 
     // --- Récupère tous les membres du projet ---
-    const membershipsSnap = await db
+    const membershipsSnap = await adminDb
       .collection("project_memberships")
       .where("projectId", "==", projectId)
       .get();
@@ -62,14 +65,14 @@ export async function DELETE(req: NextRequest) {
 
     // --- Supprime les project_memberships ---
     {
-      const batch = db.batch();
+      const batch = adminDb.batch();
       membershipsSnap.docs.forEach((doc) => batch.delete(doc.ref));
       await batch.commit();
     }
 
     // --- Supprime les notifications liées au projet ---
     {
-      const notifsSnap = await db
+      const notifsSnap = await adminDb
         .collection("notifications")
         .where("projectId", "==", projectId)
         .get();
@@ -79,7 +82,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // --- Supprime le projet ---
-    await db.collection("projects").doc(projectId).delete();
+    await adminDb.collection("projects").doc(projectId).delete();
 
     // --- Notification et mail à chaque membre ---
     const transporter = nodemailer.createTransport({
@@ -94,7 +97,7 @@ export async function DELETE(req: NextRequest) {
 
     for (const userId of userIds) {
       // Notif Firestore
-      await db.collection("notifications").add({
+      await adminDb.collection("notifications").add({
         userId,
         message: `Le projet "${projectName}" a été supprimé.`,
         type: "project_deleted",
@@ -104,7 +107,7 @@ export async function DELETE(req: NextRequest) {
       });
 
       // Email
-      const userDoc = await db.collection("users").doc(userId).get();
+      const userDoc = await adminDb.collection("users").doc(userId).get();
       const firstName = userDoc.data()?.firstName;
       const email = userDoc.data()?.email;
       if (email) {

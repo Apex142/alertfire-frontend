@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('/fonts/SpaceGrotesk-VariableFont_wght.ttf') format('truetype');
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-VariableFont_wght.ttf") format("truetype");
   font-weight: 100 700;
   font-style: normal;
   font-display: swap;
 }
 
 @theme {
-  --color-primary: #13769A;
+  --color-primary: #13769a;
   --color-primary-contrast: #115068;
   --color-text: #091747;
-  --color-surface: #FFFFFF;
-  --color-background: #F3F3F3;
-  --color-destructive: #E07A5F;
-  --color-success: #74AA91;
-  --color-alert: #F3B653;
-  --color-subtitle: #BABABA;
-  --color-grey-contrast: #F3F4F6;
-  --color-border: #E5E5E5;
-  --color-ai-variant: #13769A;
-  --color-ai-border: #E3E6EB;
-  --font-sans: 'Space Grotesk', 'Inter', sans-serif;
+  --color-surface: #ffffff;
+  --color-background: #f3f3f3;
+  --color-destructive: #e07a5f;
+  --color-success: #74aa91;
+  --color-alert: #f3b653;
+  --color-subtitle: #bababa;
+  --color-grey-contrast: #f3f4f6;
+  --color-border: #e5e5e5;
+  --color-ai-variant: #13769a;
+  --color-ai-border: #e3e6eb;
+  --font-sans: "Space Grotesk", "Inter", sans-serif;
 }
 
 :root {
-  --background: #F3F3F3;
+  --background: #f3f3f3;
   --foreground: var(--color-text);
 }
 
@@ -47,5 +47,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-family: "Space Grotesk", "Inter", sans-serif;
 }

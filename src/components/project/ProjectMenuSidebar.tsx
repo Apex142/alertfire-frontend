@@ -1,5 +1,6 @@
+"use client";
+import { useActiveProjectStore } from "@/app/project/[id]/useActiveProjectStore";
 import { cn } from "@/lib/utils";
-import { useActiveProject } from "@/stores/useActiveProjectStore";
 import {
   BadgeCheck,
   Calendar,
@@ -40,7 +41,7 @@ const additionalProducts = [
 
 export default function ProjectTabsBar() {
   const pathname = usePathname();
-  const { project } = useActiveProject();
+  const { project } = useActiveProjectStore();
   const [showModules, setShowModules] = useState(false);
 
   if (!project) return null;
@@ -89,8 +90,7 @@ export default function ProjectTabsBar() {
   };
 
   // --- Drawer mobile pour modules additionnels
-  const TABS_HEIGHT = 48;
-  const NAVBAR_HEIGHT = 75;
+  const NAVBAR_HEIGHT = 56;
 
   return (
     <>

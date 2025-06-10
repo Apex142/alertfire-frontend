@@ -1,72 +1,93 @@
 "use client";
 
-import CustomProjectScheduler from "@/components/dashboard/CustomProjectScheduler";
-import { Layout } from "@/components/LayoutLogged";
+import { Layout } from "@/components/layout/Layout";
 import { Loading } from "@/components/ui/Loading";
-import { useModal } from "@/components/ui/modal/ModalContext";
-import CreateProjectFlow from "@/features/projects/create/CreateProjectFlow";
-import { useUserData } from "@/hooks/useUserData";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProjects } from "@/hooks/useProjects";
+import { useCallback, useEffect, useMemo, useState } from "react"; // useMemo ajouté
 
-interface CalendarOption {
-  id: string;
-  label: string;
-  color: string;
-  checked: boolean;
-}
+import {
+  CalendarOption,
+  SidebarCalendarList,
+} from "../../components/dashboard/SidebarCalendarList";
+
+// TODO: Ajustez ce chemin d'importation pour qu'il corresponde à l'emplacement réel
+import { Project } from "@/types/entities/Project";
+import CustomProjectScheduler from "../../components/dashboard/CustomProjectScheduler";
+
+const STATIC_CALENDARS: Omit<CalendarOption, "label" | "checked">[] = [
+  { id: "multiviews", color: "bg-purple-500" },
+  { id: "multiviews_sec", color: "bg-yellow-500" },
+];
 
 export default function DashboardPage() {
-  const { loading, error, userData, projects } = useUserData();
-  const [showCalendars, setShowCalendars] = useState(true);
-  const [calendars, setCalendars] = useState<CalendarOption[]>([
-    { id: "personal", label: "Lucas G", color: "bg-blue-500", checked: true },
-    {
-      id: "multiviews",
-      label: "Multiviews",
-      color: "bg-purple-500",
+  const { appUser, loading: authLoading } = useAuth();
+  const { projects, loading: projectsLoading, error } = useProjects();
+
+  const [showCalendars, setShowCalendars] = useState(true); // État pour la visibilité de la liste des calendriers dans la sidebar
+  const [calendars, setCalendars] = useState<CalendarOption[]>([]);
+
+  // Calculer les activeCalendarIds une seule fois par rendu si calendars change
+  const activeCalendarIds = useMemo(() => {
+    return calendars.filter((c) => c.checked).map((c) => c.id);
+  }, [calendars]);
+
+  useEffect(() => {
+    const personalCalendarLabel =
+      appUser?.displayName || appUser?.email || "Personnel";
+    const initialPersonalCal: CalendarOption = {
+      id: "personal",
+      label: personalCalendarLabel,
+      color: "bg-blue-500",
       checked: true,
-    },
-    {
-      id: "multiviews_sec",
-      label: "Multiviews_Secondaire",
-      color: "bg-yellow-500",
-      checked: true,
-    },
-  ]);
+    };
 
-  const { openModal } = useModal();
+    const projectBasedCalendars: CalendarOption[] = (projects || []).map(
+      (project: Project) => ({
+        id: project.id,
+        label: project.projectName,
+        color: project.color || "bg-gray-500",
+        checked: true,
+      })
+    );
 
-  const handleProjectClick = (projectId: string) => {
-    console.log("project cliqué:", projectId);
-    // Navigation ou logique associée
-  };
+    const defaultStaticCalendars: CalendarOption[] = STATIC_CALENDARS.map(
+      (cal) => ({
+        ...cal,
+        label:
+          cal.id === "multiviews" ? "Multiviews Projets" : "Multiviews Tâches",
+        checked: true,
+      })
+    );
 
-  const handleAddEvent = () => {
-    openModal({
-      title: "Créer un project",
-      content: (
-        <CreateProjectFlow
-          onProjectCreated={(projectId) => {
-            handleProjectClick(projectId);
-          }}
-        />
-      ),
-    });
-  };
+    setCalendars([
+      initialPersonalCal,
+      ...projectBasedCalendars,
+      ...defaultStaticCalendars,
+    ]);
+  }, [appUser, projects]);
 
-  const toggleCalendar = (id: string) => {
-    setCalendars(
-      calendars.map((cal) =>
+  const handleProjectClick = useCallback((projectId: string) => {
+    console.log("Projet cliqué dans le scheduler :", projectId);
+    // Ajoutez votre logique de navigation ou d'affichage de détails ici
+  }, []);
+
+  const handleToggleCalendar = useCallback((id: string) => {
+    setCalendars((prev) =>
+      prev.map((cal) =>
         cal.id === id ? { ...cal, checked: !cal.checked } : cal
       )
     );
-  };
+  }, []);
 
-  if (loading) {
+  const handleToggleShowCalendars = useCallback(() => {
+    setShowCalendars((prev) => !prev);
+  }, []);
+
+  if (authLoading || projectsLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex h-full items-center justify-center">
           <Loading message="Chargement de votre tableau de bord..." />
         </div>
       </Layout>
@@ -76,11 +97,11 @@ export default function DashboardPage() {
   if (error) {
     return (
       <Layout>
-        <div className="text-center space-y-4">
+        <div className="flex h-full flex-col items-center justify-center p-4 text-center">
           <h2 className="text-2xl font-semibold text-red-600 dark:text-red-400">
             Une erreur est survenue
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">{error.message}</p>
+          <p className="text-gray-700 dark:text-gray-300">{error.message}</p>
         </div>
       </Layout>
     );
@@ -88,58 +109,51 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
-        <div className="hidden md:block w-64 border-r border-gray-200 p-4 bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-gray-900">Mes agendas</h2>
-            <button
-              onClick={() => setShowCalendars(!showCalendars)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              {showCalendars ? (
-                <ChevronUp size={16} />
-              ) : (
-                <ChevronDown size={16} />
-              )}
-            </button>
-          </div>
+      {/* Conteneur flex principal pour la sidebar et le contenu main */}
+      <div className="flex h-full">
+        <aside className="hidden w-64 flex-shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 md:block">
+          <SidebarCalendarList
+            calendars={calendars}
+            showCalendars={showCalendars} // Ce prop contrôle-t-il l'affichage de la liste à l'intérieur de la sidebar ?
+            onToggleShow={handleToggleShowCalendars}
+            onToggleCalendar={handleToggleCalendar}
+          />
+        </aside>
 
-          {showCalendars && (
-            <div className="space-y-2">
-              {calendars.map((calendar) => (
-                <label
-                  key={calendar.id}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer group"
-                >
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={calendar.checked}
-                      onChange={() => toggleCalendar(calendar.id)}
-                      className="hidden"
-                    />
-                    <div
-                      className={`w-4 h-4 rounded ${calendar.color} flex items-center justify-center`}
-                    >
-                      {calendar.checked && (
-                        <Check size={12} className="text-white" />
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-700">
-                    {calendar.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 p-4">
-          <div className="grid gap-6 w-full">
-            <CustomProjectScheduler onProjectClick={handleProjectClick} />
+        {/* Main content area:
+          - flex-1: prend l'espace horizontal restant.
+          - flex flex-col: organise ses enfants (titre, scheduler) verticalement.
+          - overflow-hidden: important pour que le scroll soit géré par le contenu interne si besoin.
+        */}
+        <main className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 p-4 pt-0 md:p-6 md:pt-0">
+            {/* Le CustomProjectScheduler devrait être conçu pour prendre h-full */}
+            {(projects && projects.length > 0) ||
+            activeCalendarIds.includes("personal") ? (
+              <CustomProjectScheduler
+                projects={projects || []}
+                onProjectClick={handleProjectClick}
+                activeCalendars={activeCalendarIds}
+                // Assurez-vous que CustomProjectScheduler a className="h-full" ou une logique similaire
+                // pour remplir l'espace de ce conteneur.
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-lg bg-white p-6 text-center shadow dark:bg-gray-800">
+                <div>
+                  {" "}
+                  {/* Div supplémentaire pour un meilleur contrôle du centrage vertical du texte */}
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200">
+                    Aucun projet à afficher
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Créez un projet pour commencer à planifier ou activez des
+                    calendriers dans la barre latérale.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        </main>
       </div>
     </Layout>
   );

@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from "react";
-import { useProjectContext } from "@/app/project/[id]/providers";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Loading } from "@/components/ui/Loading";
+import { useProjectContext } from "@/contexts/ProjectContext";
+import { notify } from "@/lib/notify";
 import { format, isValid, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { notify } from "@/lib/notify";
-import { Loading } from "@/components/ui/Loading";
+import { useMemo, useState } from "react";
 
 interface Event {
   id: string;

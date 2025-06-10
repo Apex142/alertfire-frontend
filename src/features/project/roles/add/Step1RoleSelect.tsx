@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/Input";
-import { RoleTemplate, useRoleTemplates } from "@/hooks/useRoleTemplates";
+import { useRoleTemplates } from "@/hooks/useRoleTemplates";
 import { notify } from "@/lib/notify";
+import { RoleTemplate } from "@/types/entities/RoleTemplate";
 import { AnimatePresence, motion } from "framer-motion";
 import * as LucideIcons from "lucide-react";
 import { useMemo, useState } from "react";

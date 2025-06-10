@@ -1,12 +1,10 @@
 "use client";
-
-import CreateProjectFlow from "@/features/projects/create/CreateProjectFlow";
-import { useUserData } from "@/hooks/useUserData";
+import CreateProjectFlow from "@/features/project/create/CreateProjectFlow";
+import { Project as AppProjectType, useProjects } from "@/hooks/useProjects";
 import {
   CalendarView,
   formatDate,
   getEventsForDay,
-  getEventsForTimeRange,
   getMonthDays,
   getNextMonth,
   getNextWeek,
@@ -18,315 +16,380 @@ import {
   sortEventsByDate,
 } from "@/lib/calendarUtils";
 import { cn } from "@/lib/utils";
-import {
-  endOfMonth,
-  endOfWeek,
-  format,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
+import { format, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
-import { useState } from "react";
-import Modal from "../ui/Modal";
-import { useAuth } from "@/hooks/useAuth";
-import { useNotifications } from "@/hooks/useNotifications";
 import {
-  Bell,
-  Calendar,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Columns4,
   Grid3X3,
-  Home,
   List,
+  PlusCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
+import { Button } from "../ui/Button";
+import { Loading } from "../ui/Loading";
+import Modal from "../ui/Modal";
 
-interface Props {
-  onProjectClick?: (projectId: string) => void;
+// --- CALENDAR EVENT ---
+interface CalendarEvent {
+  id: string;
+  name: string;
+  projectName: string;
+  startDate: Date;
+  endDate: Date | null;
+  status: "confirmé" | "optionnel" | "annulé" | "à-confirmer" | string;
+  color: string; // HEX ou classe Tailwind
+  rawProject: AppProjectType;
 }
 
-export default function CustomProjectScheduler({ onProjectClick }: Props) {
+interface SchedulerProps {
+  onProjectClick?: (projectId: string) => void;
+  activeCalendars?: string[];
+}
+
+// --- PALETTE PASTEL AUTO ---
+const pastelPalette = [
+  "bg-[#A5D8FF]",
+  "bg-[#FFD6A5]",
+  "bg-[#CAFFBF]",
+  "bg-[#BDB2FF]",
+  "bg-[#FDFFB6]",
+  "bg-[#FFADAD]",
+  "bg-[#9BF6FF]",
+  "bg-[#FFC6FF]",
+  "bg-[#E7C6FF]",
+  "bg-[#FDFFB6]",
+];
+
+// Petit hash pour choisir une couleur pastel
+function pastelColorFor(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++)
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return pastelPalette[Math.abs(hash) % pastelPalette.length];
+}
+
+// --- COMPONENT ---
+export default function CustomProjectScheduler({
+  onProjectClick,
+  activeCalendars = [],
+}: SchedulerProps) {
   const [view, setView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedDateForModal, setSelectedDateForModal] = useState<Date | null>(
+    null
+  );
 
-  const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  const {
+    projects: rawProjects,
+    loading,
+    error: projectsError,
+  } = useProjects();
 
-  // Déterminer la période affichée selon la vue
-  let from: Date, to: Date;
-  if (view === "month") {
-    from = startOfMonth(currentDate);
-    to = endOfMonth(currentDate);
-  } else if (view === "week") {
-    from = startOfWeek(currentDate, { weekStartsOn: 1 });
-    to = endOfWeek(currentDate, { weekStartsOn: 1 });
-  } else {
-    from = startOfMonth(currentDate);
-    to = endOfMonth(currentDate);
-  }
+  // --- Format CalendarEvents ---
+  const calendarEvents = useMemo((): CalendarEvent[] => {
+    if (!rawProjects) return [];
+    console.log("CustomProjectScheduler: rawProjects", rawProjects);
 
-  // Hook pour charger dynamiquement les projects de l'utilisateur
-  const { projects, loading, error } = useUserData();
+    return rawProjects.map((p: AppProjectType): CalendarEvent => {
+      let displayStatus: CalendarEvent["status"] = "à-confirmer";
+      if (["Confirmé", "validé", "active"].includes(p.status))
+        displayStatus = "confirmé";
+      else if (p.status === "Optionnel") displayStatus = "optionnel";
+      else if (["Annulé", "archived"].includes(p.status))
+        displayStatus = "annulé";
+      else if (p.status === "À confirmer") displayStatus = "à-confirmer";
+      else displayStatus = p.status;
+      return {
+        id: p.id,
+        name: p.projectName || (p as any).name || "Sans nom",
+        projectName: p.projectName || (p as any).name || "Sans nom",
+        startDate:
+          p.startDate instanceof Date
+            ? p.startDate
+            : typeof p.startDate?.toDate === "function"
+            ? p.startDate.toDate()
+            : new Date(p.startDate),
+        endDate: p.endDate
+          ? p.endDate instanceof Date
+            ? p.endDate
+            : typeof p.endDate?.toDate === "function"
+            ? p.endDate.toDate()
+            : new Date(p.endDate)
+          : null,
 
-  // Filtrer les projects selon la période affichée
-  const filteredProjects = projects.filter((p) => {
-    if (!p.startDate) return false;
-    return (!from || p.startDate >= from) && (!to || p.startDate <= to);
-  });
+        status: displayStatus,
+        color: p.color?.startsWith("#")
+          ? `bg-[${p.color}]`
+          : p.color || pastelColorFor(p.id),
+        rawProject: p,
+      };
+    });
+  }, [rawProjects]);
 
-  // Adapter les projects pour matcher le type CalendarEvent
-  const calendarProjects = filteredProjects.map((p) => ({
-    ...p,
-    status: (p.status === "Confirmé" || p.status === "validé"
-      ? "confirmé"
-      : "optionnel") as "confirmé" | "optionnel",
-    startDate: p.startDate,
-    endDate: p.endDate,
-    id: p.id,
-    name: p.projectName || p.name,
-    projectName: p.projectName || p.name,
-  }));
+  const daysForMonthView = useMemo(
+    () => getMonthDays(currentDate),
+    [currentDate]
+  );
+  const daysForWeekView = useMemo(
+    () => getWeekDays(currentDate, { weekStartsOn: 1 }),
+    [currentDate]
+  );
+  const staticWeekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-  // Obtenir les jours du mois courant
-  const days = getMonthDays(currentDate);
+  const handlePrevious = useCallback(() => {
+    if (view === "month") setCurrentDate(getPreviousMonth(currentDate));
+    else if (view === "week")
+      setCurrentDate(getPreviousWeek(currentDate, { weekStartsOn: 1 }));
+  }, [view, currentDate]);
+  const handleNext = useCallback(() => {
+    if (view === "month") setCurrentDate(getNextMonth(currentDate));
+    else if (view === "week")
+      setCurrentDate(getNextWeek(currentDate, { weekStartsOn: 1 }));
+  }, [view, currentDate]);
+  const handleToday = useCallback(() => setCurrentDate(new Date()), []);
+  const handleDayCellClick = useCallback((day: Date) => {
+    setSelectedDateForModal(day);
+    setIsCreateModalOpen(true);
+  }, []);
 
-  const handlePrevious = () => {
-    if (view === "month") {
-      setCurrentDate(getPreviousMonth(currentDate));
-    } else if (view === "week") {
-      setCurrentDate(getPreviousWeek(currentDate));
-    }
-  };
-
-  const handleNext = () => {
-    if (view === "month") {
-      setCurrentDate(getNextMonth(currentDate));
-    } else if (view === "week") {
-      setCurrentDate(getNextWeek(currentDate));
-    }
-  };
-
-  const handleToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  const renderMonthView = () => {
-    {
-      /* CALENDRIER MOIS */
-    }
-    const days = getMonthDays(currentDate);
-    const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
-    return (
-      <div className="grid grid-cols-7 gap-px bg-gray-200">
-        {weekDays.map((day) => (
-          <div
-            key={day}
-            className="bg-gray-50 h-[50px] flex items-center justify-center text-xs font-medium text-gray-700"
-          >
-            {day}
-          </div>
-        ))}
-        {days.map((day, index) => {
-          const dayEvents = getEventsForDay(calendarProjects, day);
-          const isToday = isCurrentDay(day);
-          const isCurrentMonthDay = isCurrentMonth(day, currentDate);
-
-          // Couleur de fond : couleur du premier project du jour, sinon bg-primary si au moins un project, sinon blanc
-          let cellBg = "bg-white";
-          if (dayEvents.length > 0) {
-            cellBg = dayEvents[0].color || "bg-primary";
-          }
-
-          return (
-            <div
-              key={index}
-              className={cn(
-                "min-h-[100px] bg-white p-2",
-                !isCurrentMonthDay && "bg-gray-50 text-gray-400",
-                isToday && "bg-blue-50"
-              )}
-              onClick={() => {
-                setSelectedDate(day);
-                setOpenCreateModal(true);
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <div className="flex items-center gap-1 mb-2">
-                <div
-                  className={cn(
-                    "text-sm font-medium",
-                    isToday &&
-                    "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
-                  )}
-                >
-                  {format(day, "d")}
-                </div>
-                <span className="text-xs text-gray-500">
-                  {format(day, "EEE", { locale: fr })}
-                </span>
-              </div>
-              <div className="space-y-1">
-                {dayEvents.map((event) => (
-                  <Link
-                    key={event.id}
-                    href={`/project/${event.id}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onProjectClick?.(event.id);
-                    }}
-                    className="block"
-                  >
-                    <div
-                      className={cn(
-                        "cursor-pointer rounded p-1 text-xs",
-                        "hover:opacity-80",
-                        "border-l-4",
-                        {
-                          "border-green-500": event.status === "confirmé",
-                          "border-yellow-500": event.status === "optionnel",
-                        }
-                      )}
-                      style={{ backgroundColor: event.color || "bg-primary" }}
-                    >
-                      <div className="flex items-center gap-1">
-                        <span className="truncate font-medium text-white">
-                          {event.projectName || event.name}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+  // --- HEADER ---
+  const renderHeader = () => (
+    <div className="sticky top-0 z-20 flex items-center justify-between px-2 sm:px-6 py-3 bg-white/90 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handlePrevious}
+          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          onClick={handleToday}
+          className="p-2 rounded-full hover:bg-primary/10 dark:hover:bg-blue-700/30 text-primary"
+        >
+          <CalendarDays className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleNext}
+          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+        <span className="font-bold text-base sm:text-lg ml-2 text-gray-800 dark:text-white select-none">
+          {view === "month"
+            ? format(currentDate, "MMMM yyyy", { locale: fr })
+            : `Semaine du ${format(
+                startOfWeek(currentDate, { weekStartsOn: 1 }),
+                "d MMM",
+                { locale: fr }
+              )}`}
+        </span>
       </div>
-    );
-  };
-
-  const renderWeekView = () => {
-    const days = getWeekDays(currentDate);
-
-    return (
-      <div className="flex overflow-x-auto h-full">
-        {days.map((day) => {
-          const dayEvents = getEventsForDay(calendarProjects, day);
-          return (
-            <div
-              key={day.toISOString()}
-              className="flex-1 border-r border-gray-200"
-            >
-              {/* En-tête du jour */}
-              <div
+      <div className="flex items-center gap-2">
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="hidden sm:flex gap-1"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Créer</span>
+        </Button>
+        <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+          {(["month", "week", "list"] as const).map((v) => {
+            const icons = { month: Grid3X3, week: Columns4, list: List };
+            const Icon = icons[v];
+            return (
+              <button
+                key={v}
+                onClick={() => setView(v)}
                 className={cn(
-                  "border-b border-gray-200 p-2 text-center h-16",
-                  isCurrentDay(day) && "bg-blue-50"
+                  "rounded-lg p-2 transition shadow-sm",
+                  view === v
+                    ? "bg-primary/80 text-white font-semibold"
+                    : "hover:bg-gray-200 dark:hover:bg-gray-700"
                 )}
               >
-                <div className="font-medium">
-                  {format(day, "EEE", { locale: fr })}
-                </div>
-                <div
-                  className={cn(
-                    "text-sm text-gray-500",
-                    isCurrentDay(day) &&
-                    "mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white mx-auto"
-                  )}
-                >
-                  {format(day, "d")}
-                </div>
-              </div>
-
-              {/* Liste des projets du jour */}
-              <div className="p-2 space-y-2">
-                {dayEvents.map((event) => (
-                  <Link
-                    key={event.id}
-                    href={`/project/${event.id}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onProjectClick?.(event.id);
-                    }}
-                    className="block"
-                  >
-                    <div
-                      className={cn(
-                        "cursor-pointer rounded p-2 text-sm",
-                        event.color,
-                        "hover:opacity-80"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-white" />
-                        <span className="font-medium text-white">
-                          {event.name}
-                        </span>
-                      </div>
-                      {event.startDate && (
-                        <div className="text-xs text-white/80 mt-1">
-                          {format(event.startDate, "HH:mm")}
-                          {event.endDate && ` - ${format(event.endDate, "HH:mm")}`}
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+                <Icon className="w-4 h-4" />
+              </button>
+            );
+          })}
+        </div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  const renderListView = () => {
-    const sortedProjects = sortEventsByDate(calendarProjects);
+  // --- MONTH VIEW ---
+  const renderMonthView = () => (
+    <div className="grid grid-cols-7 gap-px h-full bg-gray-100 dark:bg-gray-800">
+      {staticWeekDays.map((d) => (
+        <div
+          key={d}
+          className="p-2 text-xs font-bold text-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10"
+        >
+          {d}
+        </div>
+      ))}
+      {daysForMonthView.map((day, index) => {
+        const dayEvents = getEventsForDay(calendarEvents, day);
+        const isToday = isCurrentDay(day);
+        const isCurrentMonthDay = isCurrentMonth(day, currentDate);
 
-    return (
-      <div className="space-y-4">
-        {sortedProjects.map((project) => (
-          <Link
-            key={project.id}
-            href={`/project/${project.id}`}
-            onClick={() => onProjectClick?.(project.id)}
+        return (
+          <div
+            key={index}
             className={cn(
-              "cursor-pointer rounded-lg border border-gray-200 p-4 shadow-sm transition-shadow hover:shadow-md",
-              project.color
+              "relative flex flex-col min-h-[110px] sm:min-h-[120px] bg-white dark:bg-gray-900 p-1.5 border border-gray-200 dark:border-gray-800 transition cursor-pointer group",
+              !isCurrentMonthDay &&
+                "bg-gray-100 dark:bg-gray-800/80 text-gray-400 dark:text-gray-500",
+              isToday && "ring-2 ring-primary ring-inset"
+            )}
+            onClick={() => handleDayCellClick(day)}
+          >
+            <span
+              className={cn(
+                "absolute right-2 top-2 text-xs font-bold select-none",
+                isToday && "text-primary"
+              )}
+            >
+              {format(day, "d")}
+            </span>
+            <div className="flex flex-col gap-1 mt-5">
+              {dayEvents.slice(0, 3).map((event) => (
+                <Link
+                  key={event.id}
+                  href={`/project/${event.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onProjectClick?.(event.id);
+                  }}
+                  className={cn(
+                    "rounded-full px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white truncate",
+                    event.color,
+                    "shadow-sm hover:scale-[1.04] transition-transform"
+                  )}
+                  title={event.name}
+                >
+                  {event.name}
+                </Link>
+              ))}
+              {dayEvents.length > 3 && (
+                <div className="text-[10px] text-gray-400 text-center">
+                  + {dayEvents.length - 3} autres
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // --- WEEK VIEW ---
+  const renderWeekView = () => (
+    <div className="grid grid-cols-7 h-full">
+      {daysForWeekView.map((day) => {
+        const dayEvents = getEventsForDay(calendarEvents, day);
+        const isToday = isCurrentDay(day);
+        return (
+          <div
+            key={day.toISOString()}
+            className={cn(
+              "flex flex-col border border-gray-200 dark:border-gray-700 p-2 bg-white dark:bg-gray-900",
+              isToday && "ring-2 ring-primary ring-inset"
             )}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-white" />
-                <h3 className="font-medium">{project.name}</h3>
-              </div>
-              <span
-                className={cn("rounded-full px-2 py-1 text-xs font-medium", {
-                  "bg-green-100 text-green-800": project.status === "confirmé",
-                  "bg-yellow-100 text-yellow-800":
-                    project.status === "optionnel",
-                })}
-              >
-                {project.status}
-              </span>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              {formatDate(
-                project.startDate instanceof Date
-                  ? project.startDate
-                  : new Date(project.startDate)
+            <div
+              className={cn(
+                "text-xs font-semibold mb-2 text-center select-none",
+                isToday && "text-primary"
               )}
-              {project.endDate && (
-                <>
-                  {" - "}
-                  {formatDate(
-                    project.endDate instanceof Date
-                      ? project.endDate
-                      : new Date(project.endDate)
+            >
+              {format(day, "EEE d", { locale: fr })}
+            </div>
+            <div className="flex flex-col gap-2 flex-grow overflow-y-auto">
+              {dayEvents.map((event) => (
+                <Link
+                  key={event.id}
+                  href={`/project/${event.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onProjectClick?.(event.id);
+                  }}
+                  className={cn(
+                    "rounded-md px-2 py-1.5 text-xs font-semibold text-gray-800 dark:text-white truncate shadow hover:scale-[1.02] transition-transform",
+                    event.color
                   )}
-                </>
+                  title={event.name}
+                >
+                  <span>{event.name}</span>
+                  {event.startDate && (
+                    <span className="ml-2 text-[10px] font-normal text-gray-700 dark:text-gray-300">
+                      {format(event.startDate, "HH:mm")}
+                      {event.endDate && `-${format(event.endDate, "HH:mm")}`}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // --- LIST VIEW ---
+  const renderListView = () => {
+    const eventsWithValidDates = calendarEvents.map((event) => ({
+      ...event,
+      startDate:
+        event.startDate instanceof Date
+          ? event.startDate
+          : new Date(event.startDate),
+    }));
+    const sortedEvents = sortEventsByDate(eventsWithValidDates);
+
+    return (
+      <div className="p-2 md:p-4 space-y-2">
+        {sortedEvents.length === 0 && (
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            Aucun projet à afficher.
+          </div>
+        )}
+        {sortedEvents.map((event) => (
+          <Link
+            key={event.id}
+            href={`/project/${event.id}`}
+            onClick={() => onProjectClick?.(event.id)}
+            className={cn(
+              "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg px-4 py-2 border shadow-sm transition hover:shadow-lg",
+              event.color
+            )}
+          >
+            <div className="font-semibold truncate text-white/90">
+              {event.name}
+            </div>
+            <div className="flex gap-2 items-center flex-wrap">
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-medium bg-white/40 text-gray-800 dark:bg-gray-800/70 dark:text-white/80"
+                )}
+              >
+                {event.status.replace("-", " ")}
+              </span>
+              {event.startDate && (
+                <span className="text-xs font-mono text-white/90">
+                  {formatDate(event.startDate, "PPP à p", { locale: fr })}
+                  {event.endDate &&
+                    ` - ${formatDate(event.endDate, "PPP à p", {
+                      locale: fr,
+                    })}`}
+                </span>
               )}
             </div>
           </Link>
@@ -335,222 +398,54 @@ export default function CustomProjectScheduler({ onProjectClick }: Props) {
     );
   };
 
-  // Affichage loading/erreur
+  // --- LOADING / ERROR ---
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px] text-gray-500">
-        Chargement des projects…
+      <div className="flex h-full items-center justify-center text-gray-500 dark:text-gray-300">
+        <Loading message="Chargement du calendrier..." />
       </div>
     );
   }
-  if (error) {
+  if (projectsError) {
     return (
-      <div className="flex items-center justify-center min-h-[300px] text-red-500">
-        {error}
+      <div className="flex h-full flex-col items-center justify-center text-red-600 dark:text-red-400 p-4 text-center">
+        <h3 className="text-lg font-semibold">
+          Erreur de chargement des projets
+        </h3>
+        <p className="text-sm">{projectsError.message}</p>
       </div>
     );
   }
 
+  // --- RENDER ---
   return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.16)-1px)] md:h-[calc(100vh-theme(spacing.16)-1px)] h-[calc(100vh-theme(spacing.16)-1px-68px)] -m-4 p-[10px]">
-      <div className="flex items-center justify-between px-4 py-2 flex-shrink-0">
-        {/* Navigation et contrôles sur une seule ligne */}
-        <div className="flex items-center gap-2 flex-1">
-          {(view === "month" || view === "week") && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrevious}
-                className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
-                aria-label="Mois/Semaine précédente"
-              >
-                ←
-              </button>
-              <button
-                onClick={handleToday}
-                className="rounded-md p-2 hover:text-primary hover:bg-gray-100 hover:cursor-pointer flex items-center transition-colors"
-                aria-label="Retour à aujourd'hui"
-              >
-                <CalendarDays className="w-4 h-4" />
-              </button>
-              <span className="font-medium text-sm md:text-lg whitespace-nowrap">
-                {view === "month"
-                  ? format(currentDate, "MMMM yyyy", { locale: fr })
-                  : `Semaine du ${format(
-                    getWeekDays(currentDate)[0],
-                    "d MMMM",
-                    { locale: fr }
-                  )}`}
-              </span>
-              <button
-                onClick={handleNext}
-                className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:cursor-pointer"
-                aria-label="Mois/Semaine suivante"
-              >
-                →
-              </button>
-            </div>
-          )}
-          {view === "list" && (
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Liste des projets
-              </h2>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {calendarProjects.length} projet{calendarProjects.length > 1 ? 's' : ''}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Boutons de vue */}
-        <div className="flex space-x-1">
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setView("month")}
-              className={cn(
-                "rounded-md p-2 text-sm font-medium transition-colors hover:cursor-pointer",
-                view === "month"
-                  ? "bg-primary text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              )}
-              aria-label="Vue mois"
-            >
-              <Grid3X3 className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setView("week")}
-              className={cn(
-                "rounded-md p-2 text-sm font-medium transition-colors hover:cursor-pointer",
-                view === "week"
-                  ? "bg-primary text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              )}
-              aria-label="Vue semaine"
-            >
-              <Columns4 className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className={cn(
-                "rounded-md p-2 text-sm font-medium transition-colors hover:cursor-pointer",
-                view === "list"
-                  ? "bg-primary text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              )}
-              aria-label="Vue liste"
-            >
-              <List className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="bg-white border border-gray-200 flex-1 overflow-auto">
-        <AnimatePresence mode="wait">
+    <div className="flex flex-col h-full w-full max-w-full rounded-2xl border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-lg overflow-hidden">
+      {renderHeader()}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={view}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.2 }}
-            className="h-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="h-full w-full"
           >
-            {view === "month" && (
-              <div className="grid grid-cols-7 gap-px bg-gray-200 h-full">
-                {days.map((day, index) => {
-                  const dayEvents = getEventsForDay(calendarProjects, day);
-                  const isToday = isCurrentDay(day);
-                  const isCurrentMonthDay = isCurrentMonth(day, currentDate);
-
-                  return (
-                    <div
-                      key={index}
-                      className={cn(
-                        "min-h-[100px] bg-white p-2",
-                        !isCurrentMonthDay && "bg-gray-50 text-gray-400",
-                        isToday && "bg-blue-50"
-                      )}
-                      onClick={() => {
-                        setSelectedDate(day);
-                        setOpenCreateModal(true);
-                      }}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <div className="flex items-center gap-1 mb-2">
-                        <div
-                          className={cn(
-                            "text-sm font-medium",
-                            isToday &&
-                            "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white"
-                          )}
-                        >
-                          {format(day, "d")}
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {format(day, "EEE", { locale: fr })}
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {dayEvents.map((event) => (
-                          <Link
-                            key={event.id}
-                            href={`/project/${event.id}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onProjectClick?.(event.id);
-                            }}
-                            className="block"
-                          >
-                            <div
-                              className={cn(
-                                "cursor-pointer rounded p-1 text-xs",
-                                "hover:opacity-80",
-                                "border-l-4",
-                                {
-                                  "border-green-500":
-                                    event.status === "confirmé",
-                                  "border-yellow-500":
-                                    event.status === "optionnel",
-                                }
-                              )}
-                              style={{
-                                backgroundColor: event.color || "bg-primary",
-                              }}
-                            >
-                              <div className="flex items-center gap-1">
-                                <span className="truncate font-medium text-white">
-                                  {event.projectName || event.name}
-                                </span>
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {view === "month" && renderMonthView()}
             {view === "week" && renderWeekView()}
             {view === "list" && renderListView()}
           </motion.div>
         </AnimatePresence>
       </div>
+      {/* Modal création projet (à activer si besoin) */}
       <Modal
-        open={openCreateModal}
-        onClose={() => setOpenCreateModal(false)}
-        title="Créer un project"
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Planifier un nouveau projet"
       >
         <CreateProjectFlow
-          initialDate={
-            selectedDate
-              ? (() => {
-                const d = new Date(selectedDate);
-                d.setHours(0, 0, 0, 0);
-                d.setHours(d.getHours() + 2);
-                return d;
-              })()
-              : undefined
-          }
+          onProjectCreated={() => setIsCreateModalOpen(false)}
+          initialDate={selectedDateForModal || new Date()}
         />
       </Modal>
     </div>

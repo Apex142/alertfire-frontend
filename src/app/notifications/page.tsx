@@ -1,5 +1,6 @@
 "use client";
-import { Layout } from "@/components/LayoutLogged";
+
+import { Layout } from "@/components/layout/Layout";
 import { Loading } from "@/components/ui/Loading";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationsHeader from "./NotificationsHeader";

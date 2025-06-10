@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useUsers } from "@/hooks/useUser"; // <--- le hook centralisé
+import { useUsers } from "@/hooks/useUser";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Mail, Search, UserPlus } from "lucide-react";

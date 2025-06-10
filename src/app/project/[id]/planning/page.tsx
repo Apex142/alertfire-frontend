@@ -1,86 +1,82 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
 import EmptyState from "@/components/project/planning/EmptyState";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import Modal from "@/components/ui/Modal";
+import { useAuth } from "@/contexts/AuthContext";
 import CreateEventForm from "@/features/project/planning/create/CreateEventForm";
+import type { Project, ProjectDayEvent } from "@/types/entities/Project";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { MapPin, Plus } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { useMemo, useState } from "react";
 import EventDetailsModal from "./EventDetailsModal";
-import { useProjectContext } from "../providers";
-import { Loading } from "@/components/ui/Loading";
-import { useUserDataContext } from "@/app/providers";
-import type { Event } from "@/types/event";
 
-function formatHour(time: string) {
-  if (!time) return "";
-  const [h, m] = time.split(":");
-  return `${h}H${m}`;
+// Suppose que tu passes project (objet complet) et refreshEvents en props,
+// ou récupère-les avec useProject si besoin.
+interface PlanningPageProps {
+  project: Project | null;
+  refreshEvents: () => Promise<void>;
+  loading?: boolean;
 }
 
-interface Member {
-  id: string;
-  name: string;
-  role: string;
-  email?: string;
-  photoUrl?: string;
+function formatHour(ts?: any) {
+  if (!ts) return "";
+  // Firestore Timestamp > JS Date
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  return date
+    .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    .replace(":", "h");
 }
 
-export default function PlanningPage() {
-  const { project, events, loadingEvents, refreshEvents } = useProjectContext();
-  const { userData, projects } = useUserDataContext();
+export default function PlanningPage({
+  project,
+  refreshEvents,
+  loading,
+}: PlanningPageProps) {
+  const { appUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [presetDate, setPresetDate] = useState<string | null>(null);
   const [presetLocation, setPresetLocation] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ProjectDayEvent | null>(
+    null
+  );
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
-  // Organiser les données pour la vue en blocs
+  // Récupère tous les events groupés par date puis lieu
   const planningData = useMemo(() => {
-    // Grouper les événements par date puis par lieu
-    const eventsByDate: Record<string, Record<string, Event[]>> = {};
-    events.forEach((event) => {
-      if (!eventsByDate[event.date]) eventsByDate[event.date] = {};
-      if (!eventsByDate[event.date][event.locationLabel])
-        eventsByDate[event.date][event.locationLabel] = [];
-      eventsByDate[event.date][event.locationLabel].push(event);
+    if (!project?.dayPlannings) return { dates: [], eventsByDate: {} };
+    // { date: { locationLabel: [events] } }
+    const eventsByDate: Record<string, Record<string, ProjectDayEvent[]>> = {};
+    project.dayPlannings.forEach((dayPlanning) => {
+      if (!eventsByDate[dayPlanning.date]) eventsByDate[dayPlanning.date] = {};
+      dayPlanning.events.forEach((event) => {
+        const loc = event.location || "Lieu non renseigné";
+        if (!eventsByDate[dayPlanning.date][loc])
+          eventsByDate[dayPlanning.date][loc] = [];
+        eventsByDate[dayPlanning.date][loc].push(event);
+      });
     });
-    // Trier les dates
+    // Trie les dates
     const sortedDates = Object.keys(eventsByDate).sort();
     return { dates: sortedDates, eventsByDate };
-  }, [events]);
+  }, [project]);
 
-  // Fonction pour ouvrir le modal avec préremplissage
+  // Ouvre la modale avec préremplissage
   const handleAddEventWithPreset = (date: string, location: string) => {
     setPresetDate(date);
     setPresetLocation(location);
     setIsModalOpen(true);
   };
 
-  // Fonction pour ouvrir le modal sans préremplissage
   const handleAddEvent = () => {
     setPresetDate(null);
     setPresetLocation(null);
     setIsModalOpen(true);
   };
 
-  // Transformer les membres en format attendu
-  const getFormattedMembers = (memberIds: string[]): Member[] => {
-    return memberIds.map((memberId) => {
-      const project = projects.find((p) => p.members.includes(memberId));
-      return {
-        id: memberId,
-        name: project?.name || "Membre",
-        role: "Participant",
-        email: userData?.email,
-      };
-    });
-  };
-
-  if (loadingEvents) {
+  if (loading) {
     return (
       <div className="animate-pulse space-y-4">
         <div className="h-20 bg-gray-200 rounded"></div>
@@ -89,36 +85,46 @@ export default function PlanningPage() {
     );
   }
 
+  // Compte le nombre total d'events pour savoir si c'est vide
+  const totalEvents = useMemo(() => {
+    return planningData.dates.reduce((acc, date) => {
+      return (
+        acc +
+        Object.values(planningData.eventsByDate[date] || {}).reduce(
+          (sum, arr) => sum + arr.length,
+          0
+        )
+      );
+    }, 0);
+  }, [planningData]);
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold mb-1">📅 Planning du project</h1>
+          <h1 className="text-2xl font-bold mb-1">📅 Planning du projet</h1>
           <div className="text-gray-600 text-sm mb-2">
             {project?.projectName}
           </div>
-          {events.length === 0 && (
+          {totalEvents === 0 && (
             <p className="text-sm text-gray-500 max-w-2xl">
-              Constitue le planning de ton project avec par exemple les
-              plénières, conférences, ateliers, ou tout autre type d'événement.
-              Organise ainsi l'agenda de l'équipe en ajoutant les dates,
-              horaires et lieux de chaque activité.
+              Constitue le planning de ton projet&nbsp;: ajoute les tournages,
+              pauses, montages, etc. Organise chaque journée en précisant la
+              date, l’horaire et le lieu de chaque événement.
             </p>
           )}
         </div>
-        {events.length > 0 && (
-          <Button variant="primary" size="default" onClick={handleAddEvent}>
-            + Ajouter un événement
-          </Button>
-        )}
+        <Button variant="primary" size="default" onClick={handleAddEvent}>
+          + Ajouter un événement
+        </Button>
       </div>
 
       <div>
-        {events.length === 0 ? (
+        {totalEvents === 0 ? (
           <EmptyState
             onAddEvent={handleAddEvent}
             onDuplicatePlanning={async (sourceProjectId) => {
-              // TODO: Implémenter la duplication du planning
+              // TODO: implémenter la duplication
               await refreshEvents();
             }}
           />
@@ -141,7 +147,7 @@ export default function PlanningPage() {
                           <div className="flex items-center gap-2">
                             <MapPin size={16} className="text-gray-500" />
                             <span className="text-base font-semibold text-[#0a1747]">
-                              {location || "Lieu non renseigné"}
+                              {location}
                             </span>
                           </div>
                           <button
@@ -168,38 +174,20 @@ export default function PlanningPage() {
                               <div className="flex justify-between items-start">
                                 <div>
                                   <h3 className="font-medium text-gray-900">
-                                    {event.title}
+                                    {event.label}
                                   </h3>
                                   <p className="text-sm text-gray-500">
-                                    {formatHour(event.startTime)} -{" "}
-                                    {formatHour(event.endTime)}
+                                    {formatHour(event.startTime)}
+                                    {event.endTime &&
+                                      ` - ${formatHour(event.endTime)}`}
                                   </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {event.members?.length > 0 && (
-                                    <div className="flex -space-x-2">
-                                      {event.members
-                                        .slice(0, 3)
-                                        .map((memberId: string) => {
-                                          const member = projects.find((p) =>
-                                            p.members.includes(memberId)
-                                          );
-                                          return (
-                                            <div
-                                              key={memberId}
-                                              className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white"
-                                              title={member?.name || "Membre"}
-                                            />
-                                          );
-                                        })}
-                                      {event.members.length > 3 && (
-                                        <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-600">
-                                          +{event.members.length - 3}
-                                        </div>
-                                      )}
+                                  {event.type && (
+                                    <div className="mt-1 text-xs text-blue-700 font-semibold uppercase">
+                                      {event.type}
                                     </div>
                                   )}
                                 </div>
+                                {/* Ajoute ici les participants ou autre info */}
                               </div>
                             </div>
                           ))}
@@ -238,7 +226,8 @@ export default function PlanningPage() {
             setDetailsModalOpen(false);
             setSelectedEvent(null);
           }}
-          members={getFormattedMembers(selectedEvent.members || [])}
+          // Ajoute ici la gestion des membres si tu veux
+          members={[]}
         />
       )}
     </div>

@@ -1,25 +1,56 @@
-'use client';
+"use client";
 
-import { Layout } from '@/components/LayoutLogged';
-import LocationsHeader from '@/features/locations/LocationsHeader';
-import LocationsSection from '@/features/locations/LocationsSection';
-import { useLocations } from '@/hooks/useLocations';
-import { Loading } from '@/components/ui/Loading';
+import { Layout } from "@/components/layout/Layout";
+import { Loading } from "@/components/ui/Loading";
+import LocationsHeader from "@/features/locations/LocationsHeader";
+import LocationsSection from "@/features/locations/LocationsSection";
+import { useLocations } from "@/hooks/useLocations";
 
 // Mock user et company pour la démo
-const user = { uid: 'demoUser', favoriteLocationIds: ['loc2'] };
-const currentCompanyId = 'company1';
+const user = { uid: "demoUser", favoriteLocationIds: ["loc2"] };
+const currentCompanyId = "company1";
 
 // Mock locations pour la démo
 const locations = [
-  { id: 'loc1', name: 'Studio Canal+', address: 'Paris', type: 'Studio', status: 'privé', createdBy: 'demoUser', companyId: 'company1', isPublic: false },
-  { id: 'loc2', name: 'Parc Expo', address: 'Lyon', type: 'Salle', status: 'public', createdBy: 'other', companyId: null, isPublic: true },
-  { id: 'loc3', name: 'Open Space', address: 'Marseille', type: 'Coworking', status: 'collaboratif', createdBy: 'other', companyId: null, isPublic: true },
+  {
+    id: "loc1",
+    name: "Studio Canal+",
+    address: "Paris",
+    type: "Studio",
+    status: "privé",
+    createdBy: "demoUser",
+    companyId: "company1",
+    isPublic: false,
+  },
+  {
+    id: "loc2",
+    name: "Parc Expo",
+    address: "Lyon",
+    type: "Salle",
+    status: "public",
+    createdBy: "other",
+    companyId: null,
+    isPublic: true,
+  },
+  {
+    id: "loc3",
+    name: "Open Space",
+    address: "Marseille",
+    type: "Coworking",
+    status: "collaboratif",
+    createdBy: "other",
+    companyId: null,
+    isPublic: true,
+  },
 ];
 
-const myLocations = locations.filter(l => l.createdBy === user.uid || l.companyId === currentCompanyId);
-const publicLocations = locations.filter(l => l.isPublic);
-const favoriteLocations = locations.filter(l => user.favoriteLocationIds?.includes(l.id));
+const myLocations = locations.filter(
+  (l) => l.createdBy === user.uid || l.companyId === currentCompanyId
+);
+const publicLocations = locations.filter((l) => l.isPublic);
+const favoriteLocations = locations.filter((l) =>
+  user.favoriteLocationIds?.includes(l.id)
+);
 
 export default function LieuxPage() {
   const {
@@ -28,7 +59,7 @@ export default function LieuxPage() {
     favoriteLocations,
     isLoading,
     error,
-    refreshLocations
+    refreshLocations,
   } = useLocations();
 
   if (isLoading) {
@@ -88,4 +119,4 @@ export default function LieuxPage() {
       </div>
     </Layout>
   );
-} 
+}

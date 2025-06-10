@@ -1,7 +1,7 @@
 "use client";
 
 import { useProject } from "@/hooks/useProject";
-import { Project } from "@/stores/useProjectData";
+import { Project } from "@/types/entities/Project";
 import { useState } from "react";
 import { AppointmentBlock } from "./AppointmentBlock";
 import { DailySchedule } from "./DailySchedule";

@@ -1,118 +1,99 @@
-// src/hooks/useProject.ts
-import { db } from "@/lib/firebase";
-import { Project } from "@/stores/useProjectData";
+import { db } from "@/lib/firebase/client";
+import { Project, ProjectDayEvent } from "@/types/entities/Project";
+import { ProjectMembership } from "@/types/entities/ProjectMembership";
 import {
   collection,
   doc,
   getDoc,
   getDocs,
-  onSnapshot,
   query,
   where,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-// Tu peux réutiliser ou améliorer ton projectConverter ici si besoin.
+type UseProjectResult = {
+  project: Project | null;
+  technicians: ProjectMembership[];
+  events: ProjectDayEvent[]; // Ajouté ici
+  loading: boolean;
+  error: string | null;
+  notFound: boolean;
+};
 
-export interface ProjectTechnician {
-  id: string;
-  [key: string]: any;
-}
-
-interface UseProjectOptions {
-  realtime?: boolean;
-}
-
-export function useProject(
-  projectId: string | undefined,
-  options: UseProjectOptions = {}
-) {
-  const { realtime = false } = options;
-
+/**
+ * Récupère le projet, les membres techniques et les events du planning d'un projet Firestore.
+ */
+export function useProject(projectId?: string): UseProjectResult {
   const [project, setProject] = useState<Project | null>(null);
-  const [technicians, setTechnicians] = useState<ProjectTechnician[]>([]);
+  const [technicians, setTechnicians] = useState<ProjectMembership[]>([]);
+  const [events, setEvents] = useState<ProjectDayEvent[]>([]); // Ajouté
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  useEffect(() => {
+  const fetchProject = useCallback(async () => {
     if (!projectId) {
       setProject(null);
+      setEvents([]);
       setTechnicians([]);
+      setNotFound(true);
       setLoading(false);
-      setError(null);
-      setNotFound(false);
       return;
     }
     setLoading(true);
     setError(null);
     setNotFound(false);
 
-    // --- Fetch Project ---
-    let unsub: (() => void) | undefined;
-    const projectRef = doc(db, "projects", projectId);
-
-    const fetchProject = async () => {
-      try {
-        const snap = await getDoc(projectRef);
-        if (!snap.exists()) {
-          setProject(null);
-          setNotFound(true);
-        } else {
-          setProject({ id: snap.id, ...snap.data() } as Project);
-          setNotFound(false);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+    try {
+      // 1. Fetch project
+      const projectRef = doc(db, "projects", projectId);
+      const projectSnap = await getDoc(projectRef);
+      if (!projectSnap.exists()) {
+        setNotFound(true);
+        setProject(null);
+        setEvents([]);
+        setTechnicians([]);
+        setLoading(false);
+        return;
       }
-    };
+      const projectData = {
+        id: projectSnap.id,
+        ...projectSnap.data(),
+      } as Project;
+      setProject(projectData);
 
-    if (realtime) {
-      unsub = onSnapshot(
-        projectRef,
-        (snap) => {
-          if (!snap.exists()) {
-            setProject(null);
-            setNotFound(true);
-          } else {
-            setProject({ id: snap.id, ...snap.data() } as Project);
-            setNotFound(false);
-          }
-          setLoading(false);
-        },
-        (err) => {
-          setError(err.message);
-          setLoading(false);
-        }
-      );
-    } else {
-      fetchProject().finally(() => setLoading(false));
-    }
-
-    // --- Fetch Technicians ---
-    const fetchTechnicians = async () => {
-      try {
-        const q = query(
-          collection(db, "project_memberships"),
-          where("projectId", "==", projectId)
+      // 2. Extract all events from dayPlannings (if exists)
+      let allEvents: ProjectDayEvent[] = [];
+      if (Array.isArray(projectData.dayPlannings)) {
+        allEvents = projectData.dayPlannings.flatMap((planning) =>
+          Array.isArray(planning.events) ? planning.events : []
         );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setTechnicians(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
       }
-    };
+      setEvents(allEvents);
 
-    fetchTechnicians();
+      // 3. Fetch technicians
+      const techQuery = query(
+        collection(db, "project_memberships"),
+        where("projectId", "==", projectId),
+        where("role", "==", "technician") // à ajuster selon tes rôles
+      );
+      const techSnap = await getDocs(techQuery);
+      setTechnicians(
+        techSnap.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as ProjectMembership)
+        )
+      );
+    } catch (err: any) {
+      setError(err?.message || "Erreur inconnue");
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
 
-    return () => {
-      if (unsub) unsub();
-    };
-  }, [projectId, realtime]);
+  useEffect(() => {
+    fetchProject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
-  return { project, technicians, loading, error, notFound };
+  return { project, technicians, events, loading, error, notFound };
 }
