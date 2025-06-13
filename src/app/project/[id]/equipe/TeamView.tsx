@@ -4,14 +4,9 @@
 
 import Modal from "@/components/ui/Modal";
 import AddRoleFlow from "@/features/project/roles/add/AddRoleFlow";
-import { useUsers } from "@/hooks/useUser";
-import { db } from "@/lib/firebase/client";
-import { ProjectMembership } from "@/types/entities/ProjectMembership";
-import { User as UserEntity } from "@/types/entities/User";
+import { useProject } from "@/hooks/useProject";
 import { ProjectMemberStatus } from "@/types/enums/ProjectMemberStatus";
 import clsx from "clsx";
-import { getAuth } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import {
   ArrowLeftCircle,
   ArrowRightCircle,
@@ -30,27 +25,26 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useActiveProjectStore } from "../useActiveProjectStore";
 
-// Interface pour nos membres "hydratés" (fusion de Membership et User)
-type HydratedMember = ProjectMembership & Partial<UserEntity>;
+// Remplace "any" par le type réel si tu l’as
+type HydratedMember = any;
 
-export default function TeamView() {
-  // ==================================================================
-  // BLOC 1 : DÉCLARATION DE TOUS LES HOOKS ET ÉTATS
-  // ==================================================================
+export default function TeamView({ initialProject }: { initialProject: any }) {
+  // ===========================================
+  // 1. Hook principal, 0 firestore ici !
+  // ===========================================
+  const { project, technicians, loading, error, notFound } = useProject(
+    initialProject.id
+  );
 
-  const { project } = useActiveProjectStore();
-  const { users, loading: usersLoading } = useUsers();
-
-  const [members, setMembers] = useState<HydratedMember[]>([]);
-  const [membershipsLoading, setMembershipsLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean | string>(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
-
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Membres hydratés
+  const members: HydratedMember[] = technicians || [];
 
   const main = members.length > 0 ? members[index] : null;
   const prevIdx = index > 0 ? index - 1 : null;
@@ -58,6 +52,7 @@ export default function TeamView() {
   const left = prevIdx !== null ? members[prevIdx] : null;
   const right = nextIdx !== null ? members[nextIdx] : null;
 
+  // Statut d’affichage
   const status = useMemo(() => {
     if (!main) return {};
     switch (main.status) {
@@ -91,37 +86,7 @@ export default function TeamView() {
     `${main?.firstName || ""} ${main?.lastName || ""}`.trim() ||
     "Utilisateur inconnu";
 
-  // ==================================================================
-  // BLOC 2 : EFFETS DE BORD (useEffect)
-  // ==================================================================
-
-  useEffect(() => {
-    if (!project || users.length === 0) return;
-    const loadAndMergeMembers = async () => {
-      setMembershipsLoading(true);
-      try {
-        const userMap = new Map(users.map((u) => [u.uid, u]));
-        const membershipsRef = collection(db, "project_memberships");
-        const q = query(membershipsRef, where("projectId", "==", project.id));
-        const querySnapshot = await getDocs(q);
-        const hydratedMembers = querySnapshot.docs.map((doc) => {
-          const membershipData = {
-            id: doc.id,
-            ...doc.data(),
-          } as ProjectMembership;
-          const userData = userMap.get(membershipData.userId);
-          return { ...membershipData, ...userData, id: membershipData.id };
-        });
-        setMembers(hydratedMembers);
-      } catch (error) {
-        console.error("Erreur lors du chargement des membres:", error);
-      } finally {
-        setMembershipsLoading(false);
-      }
-    };
-    loadAndMergeMembers();
-  }, [project, users]);
-
+  // Index à jour si la liste change (suppression)
   useEffect(() => {
     if (members.length > 0 && index >= members.length)
       setIndex(members.length - 1);
@@ -140,11 +105,10 @@ export default function TeamView() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [settingsOpen]);
 
-  // ==================================================================
-  // BLOC 3 : RETOURS ANTICIPÉS (Early Returns)
-  // ==================================================================
-
-  if (membershipsLoading || usersLoading) {
+  // ================================
+  // États loading / error / vide
+  // ================================
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
         <Users className="w-16 h-16 text-gray-200 mb-3 animate-spin-slow" />
@@ -154,7 +118,17 @@ export default function TeamView() {
       </div>
     );
   }
-
+  if (notFound || error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+        <Users className="w-16 h-16 text-gray-300 mb-4" />
+        <h3 className="text-xl font-bold text-slate-700">Projet introuvable</h3>
+        <p className="text-slate-500 mt-2 mb-4">
+          Vérifiez le lien ou contactez le support.
+        </p>
+      </div>
+    );
+  }
   if (members.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
@@ -176,16 +150,15 @@ export default function TeamView() {
     );
   }
 
-  // ==================================================================
-  // BLOC 4 : LOGIQUE DE VUE ET RENDU FINAL
-  // ==================================================================
-
+  // ================================
+  // Suppression d’un membre (API)
+  // ================================
   const handleRemove = async () => {
     if (!main || !project) return;
     setConfirmRemove(false);
     setSettingsOpen(false);
     try {
-      const idToken = await getAuth().currentUser?.getIdToken();
+      const idToken = await window.firebase?.auth?.currentUser?.getIdToken?.();
       const res = await fetch("/api/project/member", {
         method: "DELETE",
         headers: {
@@ -200,12 +173,18 @@ export default function TeamView() {
         }),
       });
       if (!res.ok) throw new Error("Erreur lors du retrait du membre.");
-      setMembers((ms) => ms.filter((m) => m.id !== main.id));
+      // Ne touche pas à members : c’est le hook qui va réhydrater la liste.
+      if (members.length > 1) {
+        setIndex((i) => Math.max(0, i - (i === members.length - 1 ? 1 : 0)));
+      }
     } catch (e) {
       alert("Erreur lors du retrait du membre.");
     }
   };
 
+  // ================================
+  // Components Avatar & SettingsMenu
+  // ================================
   function Avatar({
     member,
     size = 20,
@@ -304,6 +283,9 @@ export default function TeamView() {
     );
   }
 
+  // ================================
+  // Rendu principal UI
+  // ================================
   return (
     <div className="pt-4">
       <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-sky-50/60 via-slate-100 to-blue-100/60">
@@ -392,7 +374,7 @@ export default function TeamView() {
                 <span
                   className={clsx(
                     "inline-block px-3 py-1 rounded-xl bg-blue-50 text-blue-800 text-sm font-bold tracking-wide mt-1 shadow",
-                    main?.role?.toLowerCase().includes("lead") &&
+                    main?.role?.toLowerCase?.().includes("lead") &&
                       "bg-amber-100 text-amber-800"
                   )}
                 >

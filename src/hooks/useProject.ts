@@ -1,6 +1,12 @@
 import { db } from "@/lib/firebase/client";
+import {
+  HydratedTechnician,
+  mergeMembershipsWithUsers,
+} from "@/lib/utils/mergeMembershipsWithUsers";
 import { Project, ProjectDayEvent } from "@/types/entities/Project";
 import { ProjectMembership } from "@/types/entities/ProjectMembership";
+import { User } from "@/types/entities/User";
+
 import {
   collection,
   doc,
@@ -13,20 +19,17 @@ import { useCallback, useEffect, useState } from "react";
 
 type UseProjectResult = {
   project: Project | null;
-  technicians: ProjectMembership[];
-  events: ProjectDayEvent[]; // Ajouté ici
+  technicians: HydratedTechnician[];
+  events: ProjectDayEvent[];
   loading: boolean;
   error: string | null;
   notFound: boolean;
 };
 
-/**
- * Récupère le projet, les membres techniques et les events du planning d'un projet Firestore.
- */
 export function useProject(projectId?: string): UseProjectResult {
   const [project, setProject] = useState<Project | null>(null);
-  const [technicians, setTechnicians] = useState<ProjectMembership[]>([]);
-  const [events, setEvents] = useState<ProjectDayEvent[]>([]); // Ajouté
+  const [technicians, setTechnicians] = useState<HydratedTechnician[]>([]);
+  const [events, setEvents] = useState<ProjectDayEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -45,7 +48,7 @@ export function useProject(projectId?: string): UseProjectResult {
     setNotFound(false);
 
     try {
-      // 1. Fetch project
+      // 1. Project
       const projectRef = doc(db, "projects", projectId);
       const projectSnap = await getDoc(projectRef);
       if (!projectSnap.exists()) {
@@ -62,7 +65,7 @@ export function useProject(projectId?: string): UseProjectResult {
       } as Project;
       setProject(projectData);
 
-      // 2. Extract all events from dayPlannings (if exists)
+      // 2. Events from dayPlannings
       let allEvents: ProjectDayEvent[] = [];
       if (Array.isArray(projectData.dayPlannings)) {
         allEvents = projectData.dayPlannings.flatMap((planning) =>
@@ -71,18 +74,34 @@ export function useProject(projectId?: string): UseProjectResult {
       }
       setEvents(allEvents);
 
-      // 3. Fetch technicians
+      // 3. Memberships (technicians)
       const techQuery = query(
         collection(db, "project_memberships"),
-        where("projectId", "==", projectId),
-        where("role", "==", "technician") // à ajuster selon tes rôles
+        where("projectId", "==", projectId)
       );
       const techSnap = await getDocs(techQuery);
-      setTechnicians(
-        techSnap.docs.map(
-          (doc) => ({ id: doc.id, ...doc.data() } as ProjectMembership)
-        )
+      const memberships: ProjectMembership[] = techSnap.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() } as ProjectMembership)
       );
+
+      // 4. Users (corresponding to memberships)
+      const userIds = memberships.map((m) => m.userId);
+      // Firebase where("uid", "in", ...) max 10, donc faire en plusieurs fois si besoin
+      const users: User[] = [];
+      const chunkSize = 10;
+      for (let i = 0; i < userIds.length; i += chunkSize) {
+        const idsChunk = userIds.slice(i, i + chunkSize);
+        if (idsChunk.length === 0) continue;
+        const userQuery = query(
+          collection(db, "users"),
+          where("uid", "in", idsChunk)
+        );
+        const userSnap = await getDocs(userQuery);
+        users.push(...userSnap.docs.map((doc) => doc.data() as User));
+      }
+
+      // 5. Merge memberships + users
+      setTechnicians(mergeMembershipsWithUsers(memberships, users));
     } catch (err: any) {
       setError(err?.message || "Erreur inconnue");
     } finally {
