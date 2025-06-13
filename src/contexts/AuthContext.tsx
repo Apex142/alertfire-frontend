@@ -1,12 +1,12 @@
-// src/contexts/AuthContext.tsx
 "use client";
 
 import { auth, db } from "@/lib/firebase/client";
 import { authService } from "@/services/AuthService";
+import { sessionService } from "@/services/SessionService";
 import { Session } from "@/types/entities/Session";
 import { User as AppUser } from "@/types/entities/User";
 import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, Unsubscribe } from "firebase/firestore";
 import {
   createContext,
   ReactNode,
@@ -16,7 +16,6 @@ import {
   useRef,
   useState,
 } from "react";
-// (Optionnel) Import du toast si tu veux notifier l'utilisateur
 import { toast } from "sonner";
 
 interface AuthContextType {
@@ -51,16 +50,37 @@ const defaultAuthContextValue: AuthContextType = {
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContextValue);
 
+const SESSION_ID_STORAGE_KEY = "currentSessionId";
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const currentSessionIdRef = useRef<string | null>(null);
 
   const userDocListenerUnsubscribeRef = useRef<Unsubscribe | null>(null);
   const sessionDocListenerUnsubscribeRef = useRef<Unsubscribe | null>(null);
 
-  // --- Helper pour nettoyer tous les listeners firestore
+  // Chargement initial : relit le sessionId du storage au mount (sur F5 par ex)
+  useEffect(() => {
+    const persistedSessionId = localStorage.getItem(SESSION_ID_STORAGE_KEY);
+    if (persistedSessionId) {
+      setCurrentSessionId(persistedSessionId);
+      currentSessionIdRef.current = persistedSessionId;
+    }
+  }, []);
+
+  // Sync ref et localStorage à chaque update
+  useEffect(() => {
+    currentSessionIdRef.current = currentSessionId;
+    if (currentSessionId) {
+      localStorage.setItem(SESSION_ID_STORAGE_KEY, currentSessionId);
+    } else {
+      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+    }
+  }, [currentSessionId]);
+
   const clearListeners = useCallback(() => {
     if (userDocListenerUnsubscribeRef.current) {
       userDocListenerUnsubscribeRef.current();
@@ -72,18 +92,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // --- Nettoyage complet de l'état utilisateur/session + déconnexion réelle
+  // --- LOGOUT ROBUSTE ---
   const performLogout = useCallback(
-    async (reason?: string) => {
+    async (reason?: string, forceSessionId?: string | null) => {
       const logPrefix = "AuthContext: performLogout -";
       setLoading(true);
       clearListeners();
 
       try {
-        // Pour debug & logs
+        const sessionId = forceSessionId ?? currentSessionIdRef.current;
         console.log(`${logPrefix} Called. Reason: ${reason || "No reason"}`);
+        console.log("Current session ID (from ref):", sessionId);
 
-        // (Optionnel) Notifie l'utilisateur selon la cause
         if (typeof reason === "string") {
           if (reason.includes("expired") || reason.includes("revoked")) {
             toast.warning(
@@ -96,40 +116,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        await fetch(`/api/session/${currentSessionId}/delete`, {
-          method: "POST",
-        });
+        if (sessionId) {
+          await fetch(`/api/session/${sessionId}/delete`, {
+            method: "POST",
+          });
+        }
 
-        // Déconnexion côté Firestore/session (révoque token, clean session doc, etc)
-        await authService.signOutUser(currentSessionId);
-
-        // Déconnexion côté Firebase Auth (CRUCIAL pour onAuthStateChanged)
+        await authService.signOutUser(sessionId);
         await auth.signOut();
 
-        // Purge côté serveur (cookie)
         await fetch("/api/auth/session", {
           method: "POST",
           body: JSON.stringify({ action: "logout" }),
         });
 
-        // Le reset des états sera auto-géré par onAuthStateChanged
-        // Juste pour garantir UX :
         setFirebaseUser(null);
         setAppUser(null);
         setCurrentSessionId(null);
+        currentSessionIdRef.current = null;
+        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
       } catch (error) {
         console.error(`${logPrefix} Error during signOut:`, error);
-        // Si crash, force le reset client
         setFirebaseUser(null);
         setAppUser(null);
         setCurrentSessionId(null);
+        currentSessionIdRef.current = null;
+        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
       }
       setLoading(false);
     },
-    [currentSessionId, clearListeners]
+    [clearListeners]
   );
 
-  // --- Gestion du cycle d'authentification Firebase (connexion/déco)
+  // --- AuthState listener (login/logout) ---
   useEffect(() => {
     const unsubscribeOnAuthStateChanged = onAuthStateChanged(
       auth,
@@ -138,11 +157,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         clearListeners();
 
         if (!fbUser) {
-          // User déco (ou jamais loggué)
           setFirebaseUser(null);
           setAppUser(null);
           setCurrentSessionId(null);
-          // Met à jour le cookie serveur aussi
+          currentSessionIdRef.current = null;
+          localStorage.removeItem(SESSION_ID_STORAGE_KEY);
           fetch("/api/auth/session", {
             method: "POST",
             body: JSON.stringify({ action: "logout" }),
@@ -152,24 +171,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         setFirebaseUser(fbUser);
+
         try {
-          // Charge le profil AppUser
-          const fetchedAppUser = await authService.getAppUserProfile(
-            fbUser.uid
-          );
+          // -------- GET USER PROFILE OR CREATE IT IF MISSING --------
+          let fetchedAppUser = await authService.getAppUserProfile(fbUser.uid);
           if (!fetchedAppUser) {
-            await performLogout("User profile not found after Firebase auth");
-            return;
+            // Création automatique du profil utilisateur si inexistant
+            const defaultProfile: AppUser = {
+              uid: fbUser.uid,
+              email: fbUser.email || "",
+              displayName: fbUser.displayName || "",
+              isBanned: false,
+            };
+            try {
+              await setDoc(doc(db, "users", fbUser.uid), defaultProfile);
+              fetchedAppUser = defaultProfile;
+              toast.success("Profil utilisateur créé automatiquement.");
+              console.log("Profil Firestore créé pour", fbUser.uid);
+            } catch (err) {
+              toast.error("Impossible de créer le profil utilisateur.");
+              await performLogout("User profile not found and creation failed");
+              setLoading(false);
+              return;
+            }
           }
+
           setAppUser(fetchedAppUser);
 
-          // Ban check
           if (fetchedAppUser.isBanned === true) {
             await performLogout("User is banned");
+            setLoading(false);
             return;
           }
 
-          // Attache le listener sur doc user Firestore (live update ban, etc)
+          // -------- RÉCUPÈRE LA DERNIÈRE SESSION ACTIVE (clé du bug corrigée ici) --------
+          const sessions = await sessionService.getUserSessions(fbUser.uid);
+          let activeSession: Session | null = null;
+          if (sessions && sessions.length > 0) {
+            // NE GARDE QUE LES NON REVOQUÉES
+            const nonRevoked = sessions.filter((s) => !s.revoked);
+            if (nonRevoked.length > 0) {
+              activeSession = nonRevoked.sort(
+                (a, b) =>
+                  (b.createdAt?.toMillis?.() || 0) -
+                  (a.createdAt?.toMillis?.() || 0)
+              )[0];
+            }
+          }
+          setSessionDetailsAction(fetchedAppUser, activeSession);
+
+          // -------- LISTEN FOR LIVE CHANGES TO USER PROFILE --------
           userDocListenerUnsubscribeRef.current = onSnapshot(
             doc(db, "users", fbUser.uid),
             async (snapshot) => {
@@ -188,11 +239,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           );
         } catch (error) {
+          toast.error("Erreur lors de la récupération du profil utilisateur.");
           await performLogout("Error processing app user profile");
+          setLoading(false);
           return;
         }
 
-        // MAJ du cookie serveur (login/refresh)
+        // -------- UPDATE SERVER SESSION COOKIE --------
         try {
           const idToken = await fbUser.getIdToken();
           fetch("/api/auth/session", {
@@ -201,6 +254,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }).catch(() => {});
         } catch {
           await performLogout("Failed to get ID token");
+          setLoading(false);
           return;
         }
 
@@ -214,7 +268,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [performLogout, clearListeners]);
 
-  // --- Listener Firestore pour la session en cours (expiration/révocation)
+  // --- Listener Firestore pour la session en cours (expiration/révocation) ---
   useEffect(() => {
     if (sessionDocListenerUnsubscribeRef.current) {
       sessionDocListenerUnsubscribeRef.current();
@@ -245,7 +299,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await performLogout("Session revoked remotely");
             return;
           }
-          if (sessionData.expiresAt.toDate().getTime() < Date.now()) {
+          if (
+            sessionData.expiresAt &&
+            sessionData.expiresAt.toDate().getTime() < Date.now()
+          ) {
             await performLogout("Session expired based on expiresAt field");
             return;
           }
@@ -263,14 +320,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [currentSessionId, appUser, firebaseUser, performLogout, clearListeners]);
 
-  // --- Pour setSessionDetails depuis le login/signup
+  // --- setSessionDetails synchronise tout (user, state, ref, localStorage) ---
   const setSessionDetailsAction = (
     user: AppUser | null,
     session: Session | null
   ) => {
     setAppUser(user);
     setCurrentSessionId(session?.sessionId || null);
+    currentSessionIdRef.current = session?.sessionId || null;
+    if (session?.sessionId) {
+      localStorage.setItem(SESSION_ID_STORAGE_KEY, session.sessionId);
+    } else {
+      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+    }
   };
+
+  // -------- Fallback UI : utilisateur connecté à Firebase mais pas de profil Firestore --------
+  if (!loading && firebaseUser && !appUser) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
+        <p className="mb-4 text-lg font-semibold">
+          Profil utilisateur introuvable.
+        </p>
+        <p className="mb-6 text-sm text-muted-foreground">
+          Veuillez contacter le support, réessayer plus tard, ou vous
+          déconnecter ci-dessous.
+        </p>
+        <button
+          className="px-4 py-2 bg-primary text-white rounded"
+          onClick={() => performLogout("Manual logout from fallback")}
+        >
+          Se déconnecter
+        </button>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
@@ -280,7 +364,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         currentSessionId,
         logout: (reason?: string) =>
-          performLogout(reason || "Manual user logout"),
+          performLogout(
+            reason || "Manual user logout",
+            currentSessionIdRef.current
+          ),
         setSessionDetails: setSessionDetailsAction,
       }}
     >

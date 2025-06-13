@@ -26,7 +26,7 @@ import NotificationButton from "../NotificationButton";
 
 export default function Navbar() {
   // Utiliser appUser de AuthContext pour les données affichées
-  const { appUser, logout, loading: authLoading } = useAuth();
+  const { appUser, logout, currentSessionId, loading: authLoading } = useAuth();
   const { unreadCount } = useNotifications(); // Suppose que ce hook retourne le nombre de notifications non lues
   const router = useRouter();
   const pathname = usePathname();
@@ -237,7 +237,10 @@ export default function Navbar() {
                         <button
                           onClick={async () => {
                             setMenuOpen(false);
-                            await logout("Manual user logout from Navbar menu"); // Utiliser logout du AuthContext
+                            await logout(
+                              "Manual user logout",
+                              currentSessionId
+                            ); // Utiliser logout du AuthContext
                             router.push("/"); // Rediriger vers l'accueil après déconnexion
                           }}
                           className="block w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-700/20 flex items-center gap-3"

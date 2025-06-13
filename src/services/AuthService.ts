@@ -216,6 +216,8 @@ export class AuthService {
 
   async signOutUser(currentSessionId?: string): Promise<void> {
     try {
+      console.log("Signing out user...");
+      console.log("Current session ID:", currentSessionId);
       if (currentSessionId) {
         await sessionService.revokeSession(currentSessionId);
       }

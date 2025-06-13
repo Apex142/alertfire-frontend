@@ -1,21 +1,23 @@
 // src/components/auth/LoginForm.tsx
 "use client";
 
-import { Button } from "@/components/ui/Button"; // Assurez-vous que ce chemin est correct
+import { Button } from "@/components/ui/Button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/Card"; // Assurez-vous que ce chemin est correct
-import { Input } from "@/components/ui/Input"; // Assurez-vous que ce chemin est correct
-import { notify } from "@/lib/notify"; // Assurez-vous que ce chemin et cette lib existent
-import { authService } from "@/services/AuthService"; // Utilisation de l'instance singleton
+} from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { useAuth } from "@/contexts/AuthContext"; // Ajouté
+import { notify } from "@/lib/notify";
+import { authService } from "@/services/AuthService";
 import { AuthProviderType } from "@/types/enums/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,7 +31,6 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const getFirebaseErrorMessage = (error: FirebaseError): string => {
-  // ... (fonction getFirebaseErrorMessage comme définie précédemment)
   switch (error.code) {
     case "auth/user-not-found":
     case "auth/wrong-password":
@@ -62,13 +63,21 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+  const router = useRouter();
+  const { setSessionDetails } = useAuth(); // pour forcer la MAJ du contexte
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError("");
-      await authService.signInUser(data.email, data.password);
+      // Récupère la session renvoyée par le service
+      const { appUser, session } = await authService.signInUser(
+        data.email,
+        data.password
+      );
+      setSessionDetails(appUser, session); // SYNCHRONISE le contexte
       notify.success("Connexion réussie ! Redirection...");
-      // La redirection est gérée par la page parente (ex: HomePage)
+      // Redirection après la synchronisation
+      router.replace("/dashboard");
     } catch (err) {
       if (err instanceof FirebaseError) {
         setError(getFirebaseErrorMessage(err));
@@ -84,16 +93,20 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const handleGoogleSignIn = async () => {
     try {
       setError("");
-      await authService.signInWithProvider(AuthProviderType.GOOGLE);
+      // Récupère la session renvoyée par le service
+      const { appUser, session } = await authService.signInWithProvider(
+        AuthProviderType.GOOGLE
+      );
+      setSessionDetails(appUser, session); // SYNCHRONISE le contexte
       notify.success("Connexion avec Google réussie ! Redirection...");
+      router.replace("/dashboard");
     } catch (err) {
       if (err instanceof FirebaseError) {
         if (
           err.code === "auth/popup-closed-by-user" ||
           err.code === "auth/cancelled-popup-request"
         ) {
-          // Optionnel: ne pas afficher d'erreur ou un message discret si l'utilisateur annule.
-          // setError("La connexion Google a été annulée.");
+          // Optionnel: pas d'erreur affichée si popup annulée
         } else {
           setError(getFirebaseErrorMessage(err));
         }
@@ -107,7 +120,6 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   };
 
   const GoogleIcon = () => (
-    /* ... (SVG Google comme défini précédemment) ... */
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -134,7 +146,7 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
       <CardHeader>
         <div className="mb-4 flex justify-center">
           <Image
-            src="/images/ShowmateLogo_CARRE.png" // Assurez-vous que cette image est dans public/images/
+            src="/images/ShowmateLogo_CARRE.png"
             alt="Logo Showmate"
             width={80}
             height={80}

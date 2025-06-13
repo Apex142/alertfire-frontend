@@ -26,6 +26,9 @@ export class SessionRepository {
       lastActiveAt: now,
       revoked: false,
     });
+
+    await updateDoc(res, { sessionId: res.id });
+
     return {
       ...(data as any),
       sessionId: res.id,

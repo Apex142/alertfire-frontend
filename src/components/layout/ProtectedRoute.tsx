@@ -1,8 +1,8 @@
 // src/components/layout/ProtectedRoute.tsx
 
-import { Loading } from "@/components/ui/Loading"; // Un composant de chargement simple
+import { Loading } from "@/components/ui/Loading";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePathname, useRouter } from "next/navigation"; // Pour la redirection et obtenir le chemin actuel
+import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 
 interface ProtectedRouteProps {
@@ -10,40 +10,45 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { appUser, firebaseUser, loading } = useAuth(); // Utilise appUser ou firebaseUser
+  const { appUser, firebaseUser, currentSessionId, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname(); // Pour savoir où rediriger après le login
+  const pathname = usePathname();
 
-  const isAuthenticated = !!appUser || !!firebaseUser; // Considérer l'utilisateur comme authentifié si l'un ou l'autre est présent
+  // L’utilisateur est considéré comme authentifié SEULEMENT si les 3 sont ok
+  const isAuthenticated = !!appUser && !!firebaseUser && !!currentSessionId;
 
   useEffect(() => {
-    // Ne pas rediriger pendant le chargement ou si déjà authentifié
-    if (loading || isAuthenticated) {
+    // Ne pas rediriger pendant le chargement ou si authentifié
+    if (loading || (firebaseUser && !currentSessionId) || isAuthenticated) {
       return;
     }
 
-    // Si le chargement est terminé et l'utilisateur n'est pas authentifié
+    // Si plus de chargement ET utilisateur non authentifié
     if (!isAuthenticated) {
-      // Stocker le chemin actuel pour une redirection après le login
       const redirectUrl =
         pathname !== "/" ? `?redirect=${encodeURIComponent(pathname)}` : "";
       router.replace(`/login${redirectUrl}`);
     }
-  }, [loading, isAuthenticated, router, pathname]);
+  }, [
+    loading,
+    isAuthenticated,
+    firebaseUser,
+    currentSessionId,
+    router,
+    pathname,
+  ]);
 
-  if (loading) {
+  // Bloque tant qu’on ne sait pas si la session existe
+  if (loading || (firebaseUser && !currentSessionId)) {
     return (
       <div className="flex h-full min-h-[calc(100vh-120px)] w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
-        {/* Ajustez min-h si besoin pour s'adapter à la hauteur de votre contenu principal */}
         <Loading message="Vérification de l'authentification..." />
       </div>
     );
   }
 
+  // Redirige si non authentifié (même sécurité que dans useEffect)
   if (!isAuthenticated) {
-    // Bien que useEffect gère la redirection, ce retour est une sécurité
-    // pour éviter d'afficher brièvement les children avant que la redirection ne se produise.
-    // Peut aussi afficher un spinner ici si la redirection prend un instant.
     return (
       <div className="flex h-full min-h-[calc(100vh-120px)] w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
         <Loading message="Redirection vers la page de connexion..." />
@@ -51,6 +56,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Si l'utilisateur est authentifié et le chargement est terminé
+  // Affiche le contenu si tout est ok
   return <>{children}</>;
 }
