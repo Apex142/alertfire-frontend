@@ -51,14 +51,6 @@ export default function NotificationButton() {
         aria-label="Voir les notifications"
       >
         <Bell className="w-6 h-6 text-gray-300" />
-        {unreadCount > 0 && (
-          <>
-            {/* Badge visible */}
-            <span className="absolute top-2 right-2 w-3 h-3 bg-blue-600 border-2 border-white rounded-full" />
-            {/* Blink effet en dessous pour plus de visibilité */}
-            <span className="absolute top-2 right-2 w-5 h-5 bg-blue-400 opacity-30 rounded-full animate-ping pointer-events-none" />
-          </>
-        )}
       </button>
       <AnimatePresence>
         {open && (
