@@ -1,45 +1,59 @@
-# 📛 AlertFire – Plateforme de coordination d’événements terrain
+# 🔥 AlertFire – Système intelligent de détection et de gestion d'incendies
 
-**AlertFire** est une application web moderne dédiée à la **gestion d’équipes, de lieux et de logistique pour des projets événementiels ou audiovisuels**.
+**AlertFire** est une plateforme web et embarquée dédiée à la **détection rapide des départs de feu en milieu naturel** et à la **coordination des interventions**.
 
-Conçue pour les **tournages, festivals, événements associatifs ou d’entreprise**, elle centralise **les plannings, les affectations, les feuilles de service et la communication terrain**.
-
----
-
-## 🚀 Fonctionnalités clés
-
-- 🔧 **Gestion complète de projets événementiels**  
-  Créez un projet, ajoutez des événements (jours, créneaux horaires), assignez les rôles et gérez l’organisation au quotidien.
-
-- 🧑‍🤝‍🧑 **Réseau de techniciens, bénévoles et collaborateurs**  
-  Invitez des personnes à rejoindre votre projet, répartissez les postes, suivez les affectations.
-
-- 📄 **Feuilles de service dynamiques**  
-  Chaque membre accède à ses horaires, fonctions, contacts et infos pratiques jour par jour.
-
-- 📍 **Base collaborative de lieux**  
-  Créez ou partagez des lieux avec fiches techniques, historique d’usage, accès et contacts.
+Le système s'appuie sur des **capteurs physiques (Arduino + capteur de flamme + module LoRa)** déployés sur les arbres, un **modèle d'IA embarqué**, et une **interface web de supervision** pour visualiser en temps réel les alertes, les emplacements et l’évolution du feu.
 
 ---
 
-## 🛠 Stack technique
+## 🚨 Fonctionnalités principales
 
-- **Frontend** : Next.js (App Router), React, Tailwind CSS
-- **Backend (BaaS)** : Firebase
-  - Firestore (base de données temps réel)
-  - Firebase Auth (authentification)
-  - Firebase Storage (gestion de fichiers)
-- **État local** : Zustand
-- **Déploiement** : Vercel (Next.js) + Firebase Hosting
+- **Détection embarquée des départs de feu**  
+  Chaque capteur analyse son environnement localement via un modèle IA léger pour éviter les faux positifs.
+
+- **Communication distribuée via LoRa**  
+  Les arbres communiquent entre eux de manière longue portée pour propager les alertes.
+
+- **Carte interactive en temps réel**  
+  Visualisez les arbres, leur statut, les foyers détectés et la propagation des alertes.
+
+- **Historique & traçabilité des incendies**  
+  Accédez aux historiques d’alertes, journaux de propagation et réponses.
+
+- **Gestion des équipes & des interventions**  
+  Assignez des équipes, suivez les actions, localisez les points d'accès critiques.
 
 ---
 
-## 💡 Objectif
+## 🧠 Architecture technique
 
-Offrir un outil simple, efficace et collaboratif pour les chefs de projet, régisseurs et coordinateurs terrain.
+- **Systèmes embarqués** : Arduino Nano, capteur de flamme, module LoRa E32, IA embarquée avec quantization
+- **Backend IA** : Python + scikit-learn (modèle d’apprentissage supervisé léger)
+- **Frontend** : Next.js + React + Tailwind CSS + Framer Motion
+- **Backend Web** : Node.js (API), Firebase (auth, base, stockage)
+- **Communication** : Sérialisation JSON, protocole LoRa optimisé, traitement distribué
+- **Déploiement** : Vercel (web), Firebase Hosting, microcontrôleurs autonomes
 
 ---
 
-## 📬 Contact
+## 🔬 Objectif
 
-Développé par l’équipe **AlertFire** – Pour toute question ou suggestion, contactez-nous sur [votre.email@exemple.com](mailto:votre.email@exemple.com)
+Détecter et **signaler automatiquement un départ de feu en moins de 3 secondes**, même en zone sans réseau, grâce à un réseau intelligent d’arbres connectés.
+
+---
+
+## 🧪 État du projet
+
+> ✅ Détection embarquée  
+> ✅ Communication inter-arbres  
+> ✅ Carte temps réel (frontend)  
+> 🚧 Backend coordination multi-zones  
+> 🚧 Simulation propagation + alertes en masse  
+> 🚧 Interface mobile
+
+---
+
+## 👨‍💻 Auteurs
+
+Projet développé par **Mehdi Martin** et l’équipe AlertFire – Université Aix-Marseille  
+Licence 3 Informatique – Projet Système Distribué & IA embarquée
