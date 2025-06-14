@@ -1,6 +1,6 @@
-# 📆 Showmate – Plateforme de gestion événementielle
+# 📆 alertfire – Plateforme de gestion événementielle
 
-**Showmate** est une application web dédiée à la planification et la gestion des événements audiovisuels, culturels et professionnels.
+**alertfire** est une application web dédiée à la planification et la gestion des événements audiovisuels, culturels et professionnels.
 
 Elle facilite l'organisation de tournages, congrès, festivals, événements d'entreprise ou associatifs, en centralisant la gestion des équipes, du matériel, des feuilles de service, des lieux, et des communications.
 

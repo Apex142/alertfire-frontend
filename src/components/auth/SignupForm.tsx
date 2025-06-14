@@ -176,8 +176,8 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
       <CardHeader>
         <div className="mb-4 flex justify-center">
           <Image
-            src="/images/ShowmateLogo_CARRE.png" // Assurez-vous que cette image est dans public/images/
-            alt="Logo Showmate"
+            src="/images/AlertFireLogo_CARRE.png" // Assurez-vous que cette image est dans public/images/
+            alt="Logo AlertFire"
             width={80}
             height={80}
             priority
@@ -187,7 +187,7 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
           Créer votre compte
         </CardTitle>
         <CardDescription className="text-center dark:text-gray-400">
-          Rejoignez Showmate dès aujourd'hui.
+          Rejoignez AlertFire dès aujourd'hui.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -3,10 +3,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services' // << DÉPLACÉ ICI, C'EST LA CORRECTION PRINCIPALE
 
 android {
-    namespace "com.showmate"
+    namespace "com.alertfire"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.showmate"
+        applicationId "com.alertfire"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

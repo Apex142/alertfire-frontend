@@ -146,8 +146,8 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
       <CardHeader>
         <div className="mb-4 flex justify-center">
           <Image
-            src="/images/ShowmateLogo_CARRE.png"
-            alt="Logo Showmate"
+            src="/images/AlertFireLogo_CARRE.png"
+            alt="Logo alertfire"
             width={80}
             height={80}
             priority
@@ -157,7 +157,7 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
           Bonjour !
         </CardTitle>
         <CardDescription className="text-center dark:text-gray-400">
-          Connectez-vous à votre compte Showmate
+          Connectez-vous à votre compte AlertFire
         </CardDescription>
       </CardHeader>
       <CardContent>

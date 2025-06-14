@@ -1,4 +1,5 @@
 // NE PAS mettre "use client" ici !
+import Navbar from "@/components/layout/Navbar";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
@@ -11,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Showmate",
+  title: "alertfire",
   description: "Votre plateforme de gestion d'événements",
 };
 
@@ -24,7 +25,10 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Toaster position="top-right" richColors />
-        <Providers>{children}</Providers>
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

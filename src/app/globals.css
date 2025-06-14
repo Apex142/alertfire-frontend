@@ -9,24 +9,24 @@
 }
 
 @theme {
-  --color-primary: #13769a;
-  --color-primary-contrast: #115068;
-  --color-text: #091747;
-  --color-surface: #ffffff;
-  --color-background: #f3f3f3;
-  --color-destructive: #e07a5f;
-  --color-success: #74aa91;
-  --color-alert: #f3b653;
-  --color-subtitle: #bababa;
-  --color-grey-contrast: #f3f4f6;
-  --color-border: #e5e5e5;
-  --color-ai-variant: #13769a;
-  --color-ai-border: #e3e6eb;
+  --color-primary: #ff6a00; /* orange feu doux */
+  --color-primary-contrast: #b34700; /* brun orangé */
+  --color-text: #2d1a05; /* brun foncé */
+  --color-surface: #fff8f3; /* blanc chaud */
+  --color-background: #fff3e6; /* beige feu léger */
+  --color-destructive: #e25822; /* orange vif mais pas agressif */
+  --color-success: #ffd580; /* jaune doux */
+  --color-alert: #ffb347; /* orange pastel */
+  --color-subtitle: #bfa27a; /* beige doré */
+  --color-grey-contrast: #f9e8d9; /* gris très clair chaud */
+  --color-border: #ffd6b3; /* beige orangé */
+  --color-ai-variant: #ff6a00;
+  --color-ai-border: #ffe5cc;
   --font-sans: "Space Grotesk", "Inter", sans-serif;
 }
 
 :root {
-  --background: #f3f3f3;
+  --background: #fff3e6;
   --foreground: var(--color-text);
 }
 
@@ -39,7 +39,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #2d1a05;
     --foreground: var(--color-surface);
   }
 }

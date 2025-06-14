@@ -1,8 +1,8 @@
 import { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.showmate",
-  appName: "Showmate",
+  appId: "com.alertfire",
+  appName: "alertfire",
 
   webDir: "dist",
 

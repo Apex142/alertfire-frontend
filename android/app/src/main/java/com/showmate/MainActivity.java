@@ -1,4 +1,4 @@
-package com.showmate;
+package com.alertfire;
 
 import com.getcapacitor.BridgeActivity;
 

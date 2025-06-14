@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: false
 ---
-# 🧭 Coding Rules – Showmate (Cursor Project)
+# 🧭 Coding Rules – alertfire (Cursor Project)
 
 ## 🔤 Langage
 - Utiliser **TypeScript** pour tout le project.
@@ -34,17 +34,17 @@ alwaysApply: false
 ## 🧠 Logique & Bonnes pratiques React
 - Utiliser les **Functional Components** uniquement.
 - Toutes les pages privées doivent être wrappées dans <ProtectedRoute>...</ProtectedRoute>
-- Les loading doivent être utilisé depuis [Loading.tsx](mdc:showmate/src/components/ui/Loading.tsx)
-- Les données doivent être stockées en local en respectant [local-storage.mdc](mdc:showmate/.cursor/rules/local-storage.mdc)
+- Les loading doivent être utilisé depuis [Loading.tsx](mdc:alertfire/src/components/ui/Loading.tsx)
+- Les données doivent être stockées en local en respectant [local-storage.mdc](mdc:alertfire/.cursor/rules/local-storage.mdc)
 - Ne jamais mettre de logique dans les composants si elle peut être extraite (hooks).
 - Préférer les `server components` dans `/app`, sauf s’il y a besoin de `useState`, `useEffect`, etc.
 - Les hooks personnalisés vont dans `/hooks`.
-- Utiliser [notify.ts](mdc:showmate/src/lib/notify.ts) lors de validation de form.
+- Utiliser [notify.ts](mdc:alertfire/src/lib/notify.ts) lors de validation de form.
 
 ---
 
 ## 🔐 Firebase & Auth
-- la configuration de [firebase.ts](mdc:showmate/src/lib/firebase.ts) se situe `src/lib/firebase.ts`
+- la configuration de [firebase.ts](mdc:alertfire/src/lib/firebase.ts) se situe `src/lib/firebase.ts`
 - Les accès utilisateurs sont gérés via **Firebase Auth**.
 - Créer un hook `useAuth` avec `onAuthStateChanged` ou `useAuthState` de `react-firebase-hooks`.
 - Utiliser `Firebase Rules` pour sécuriser Firestore (lecture/écriture par rôles).

@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -10,8 +9,6 @@ export default function NotFound() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      <Navbar />
-
       {/* même padding que dans ton Layout pour laisser la place au Navbar */}
       <div className="h-full md:pb-14 pb-32 overflow-y-auto pt-[65px]">
         <main className="h-full flex flex-col items-center justify-center gap-6 text-center p-6">

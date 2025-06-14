@@ -27,7 +27,7 @@ interface AuthContextType {
   setSessionDetails: (user: AppUser | null, session: Session | null) => void;
 }
 
-const SESSION_ID_STORAGE_KEY = "currentSessionId";
+const SESSION_ID_STORAGE_KEY = "sessionId";
 
 const AuthContext = createContext<AuthContextType>({
   firebaseUser: null,
