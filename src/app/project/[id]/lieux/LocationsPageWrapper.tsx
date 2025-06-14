@@ -1,19 +1,20 @@
-// src/features/project/team/TeamPageWrapper.tsx
-
 "use client";
 
 import { Loading } from "@/components/ui/Loading";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import Layout from "../Layout";
 import { useActiveProjectStore } from "../useActiveProjectStore";
-import TeamView from "./TeamView";
+import LocationsPage from "./LocationsPage";
+import Layout from "../Layout";
 
-interface TeamPageWrapperProps {
+// Wrapper pour la page lieux, gestion du projet courant et des erreurs/retry
+interface LocationsPageWrapperProps {
   projectId: string;
 }
 
-export default function TeamPageWrapper({ projectId }: TeamPageWrapperProps) {
+export default function LocationsPageWrapper({
+  projectId,
+}: LocationsPageWrapperProps) {
   const router = useRouter();
   const [retryCount, setRetryCount] = useState(0);
   const { project, isLoading, error, setActiveProject } =
@@ -32,7 +33,7 @@ export default function TeamPageWrapper({ projectId }: TeamPageWrapperProps) {
         initializationRef.current = setActiveProject(projectId);
         await initializationRef.current;
         initRef.current = true;
-      } catch (err) {
+      } catch {
         initializationRef.current = null;
         // L'erreur est remontée par le store
       }
@@ -41,7 +42,6 @@ export default function TeamPageWrapper({ projectId }: TeamPageWrapperProps) {
     initProject();
 
     return () => {
-      // On reset si le composant change ou démonte
       initRef.current = false;
       initializationRef.current = null;
     };
@@ -59,7 +59,6 @@ export default function TeamPageWrapper({ projectId }: TeamPageWrapperProps) {
       return;
     }
 
-    // Retry avec backoff progressif
     const timer = setTimeout(() => {
       setRetryCount((prev) => prev + 1);
       setActiveProject(projectId);
@@ -112,22 +111,18 @@ export default function TeamPageWrapper({ projectId }: TeamPageWrapperProps) {
       </div>
     );
   } else if (!project && !isLoading) {
-    // Fin du chargement mais projet null (cas rare)
     content = (
       <div className="flex items-center justify-center min-h-screen">
         Projet introuvable.
       </div>
     );
   } else if (project) {
-    // Succès : passer le projet à TeamView
-    content = <TeamView initialProject={project} />;
+    content = <LocationsPage project={project} />;
   }
 
-  // Si pas encore d’ID projet, ne pas wrapper dans Layout
   if (!project?.id) {
     return content;
   }
 
-  // Projet chargé : affichage avec Layout du projet
   return <Layout params={{ id: project.id }}>{content}</Layout>;
 }

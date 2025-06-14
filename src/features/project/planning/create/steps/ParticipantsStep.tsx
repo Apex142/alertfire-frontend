@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { db } from "@/lib/firebase/client";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useEffect, useState } from "react";
 import type { EventFormData } from "../CreateEventForm";
 
 interface ProjectMember {

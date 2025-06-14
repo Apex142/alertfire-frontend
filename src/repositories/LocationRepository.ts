@@ -16,61 +16,94 @@ import {
 import { ILocationRepository } from "./ILocationRepository";
 
 export class LocationRepository implements ILocationRepository {
-  private locationsCollection = collection(db, "locations");
+  // Pour les locations dans un projet
+  private getLocationsCollection(projectId: string) {
+    return collection(db, "projects", projectId, "locations");
+  }
 
+  // Pour les locations globales (publiques/company)
+  private getGlobalLocationsCollection() {
+    return collection(db, "locations");
+  }
+
+  // ----- Projet -----
   async create(
+    projectId: string,
     locationData: Omit<Location, "id" | "createdAt" | "updatedAt">
   ): Promise<Location> {
     const now = serverTimestamp() as Timestamp;
-    const docRef = await addDoc(this.locationsCollection, {
+    const colRef = this.getLocationsCollection(projectId);
+    const docRef = await addDoc(colRef, {
       ...locationData,
       createdAt: now,
       updatedAt: now,
     });
-    // Retourne l'objet sans attendre la résolution des timestamps
     return {
       id: docRef.id,
       ...locationData,
-      createdAt: Timestamp.now(), // Approximation pour affichage immédiat
+      createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     } as Location;
   }
 
-  async findById(id: string): Promise<Location | null> {
-    const locationRef = doc(this.locationsCollection, id);
-    const snap = await getDoc(locationRef);
+  async findById(projectId: string, id: string): Promise<Location | null> {
+    const docRef = doc(this.getLocationsCollection(projectId), id);
+    const snap = await getDoc(docRef);
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as Location) : null;
   }
 
-  async update(id: string, data: Partial<Location>): Promise<Location | null> {
-    const locationRef = doc(this.locationsCollection, id);
-    await updateDoc(locationRef, { ...data, updatedAt: serverTimestamp() });
-    const snap = await getDoc(locationRef);
+  async update(
+    projectId: string,
+    id: string,
+    data: Partial<Location>
+  ): Promise<Location | null> {
+    const docRef = doc(this.getLocationsCollection(projectId), id);
+    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+    const snap = await getDoc(docRef);
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as Location) : null;
   }
 
-  async delete(id: string): Promise<void> {
-    await deleteDoc(doc(this.locationsCollection, id));
+  async delete(projectId: string, id: string): Promise<void> {
+    const docRef = doc(this.getLocationsCollection(projectId), id);
+    await deleteDoc(docRef);
   }
 
-  async findByCreator(userId: string): Promise<Location[]> {
-    const q = query(this.locationsCollection, where("createdBy", "==", userId));
-    const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Location));
+  async findAll(projectId: string): Promise<Location[]> {
+    const colRef = this.getLocationsCollection(projectId);
+    const snap = await getDocs(colRef);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Location));
   }
 
-  async findByCompany(companyId: string): Promise<Location[]> {
-    const q = query(
-      this.locationsCollection,
-      where("companyId", "==", companyId)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Location));
+  // ----- GLOBAL (Hors projet) -----
+  async createGlobal(
+    locationData: Omit<Location, "id" | "createdAt" | "updatedAt">
+  ): Promise<Location> {
+    const now = serverTimestamp() as Timestamp;
+    const colRef = this.getGlobalLocationsCollection();
+    const docRef = await addDoc(colRef, {
+      ...locationData,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return {
+      id: docRef.id,
+      ...locationData,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    } as Location;
   }
 
   async findPublic(): Promise<Location[]> {
-    const q = query(this.locationsCollection, where("isPublic", "==", true));
+    const colRef = this.getGlobalLocationsCollection();
+    const q = query(colRef, where("isPublic", "==", true));
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Location));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Location));
+  }
+
+  async findByCompany(companyId: string): Promise<Location[]> {
+    const colRef = this.getGlobalLocationsCollection();
+    const q = query(colRef, where("companyId", "==", companyId));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Location));
   }
 }

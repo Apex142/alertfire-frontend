@@ -1,5 +1,4 @@
-import { db } from "@/lib/firebase";
-import { Company } from "@/types/company";
+import { db } from "@/lib/firebase/client";
 import {
   collection,
   FirestoreDataConverter,

@@ -1,235 +1,149 @@
+// src/features/project/planning/PlanningPageWrapper.tsx
+
 "use client";
 
-import EmptyState from "@/components/project/planning/EmptyState";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import Modal from "@/components/ui/Modal";
-import { useAuth } from "@/contexts/AuthContext";
-import CreateEventForm from "@/features/project/planning/create/CreateEventForm";
-import type { Project, ProjectDayEvent } from "@/types/entities/Project";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { MapPin, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
-import EventDetailsModal from "./EventDetailsModal";
+import { Loading } from "@/components/ui/Loading";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Layout from "../layout";
+import { useActiveProjectStore } from "../useActiveProjectStore";
+import PlanningPage from "./PlanningPage";
 
-// Suppose que tu passes project (objet complet) et refreshEvents en props,
-// ou récupère-les avec useProject si besoin.
-interface PlanningPageProps {
-  project: Project | null;
-  refreshEvents: () => Promise<void>;
-  loading?: boolean;
+interface PlanningPageWrapperProps {
+  projectId: string;
 }
 
-function formatHour(ts?: any) {
-  if (!ts) return "";
-  // Firestore Timestamp > JS Date
-  const date = ts.toDate ? ts.toDate() : new Date(ts);
-  return date
-    .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-    .replace(":", "h");
-}
+export default function PlanningPageWrapper({
+  projectId,
+}: PlanningPageWrapperProps) {
+  const router = useRouter();
+  const [retryCount, setRetryCount] = useState(0);
+  const { project, isLoading, error, setActiveProject } =
+    useActiveProjectStore();
 
-export default function PlanningPage({
-  project,
-  refreshEvents,
-  loading,
-}: PlanningPageProps) {
-  const { appUser } = useAuth();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [presetDate, setPresetDate] = useState<string | null>(null);
-  const [presetLocation, setPresetLocation] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<ProjectDayEvent | null>(
-    null
-  );
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const initRef = useRef(false);
+  const initializationRef = useRef<Promise<void> | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0); // Force refresh de PlanningPage
 
-  // Récupère tous les events groupés par date puis lieu
-  const planningData = useMemo(() => {
-    if (!project?.dayPlannings) return { dates: [], eventsByDate: {} };
-    // { date: { locationLabel: [events] } }
-    const eventsByDate: Record<string, Record<string, ProjectDayEvent[]>> = {};
-    project.dayPlannings.forEach((dayPlanning) => {
-      if (!eventsByDate[dayPlanning.date]) eventsByDate[dayPlanning.date] = {};
-      dayPlanning.events.forEach((event) => {
-        const loc = event.location || "Lieu non renseigné";
-        if (!eventsByDate[dayPlanning.date][loc])
-          eventsByDate[dayPlanning.date][loc] = [];
-        eventsByDate[dayPlanning.date][loc].push(event);
-      });
-    });
-    // Trie les dates
-    const sortedDates = Object.keys(eventsByDate).sort();
-    return { dates: sortedDates, eventsByDate };
-  }, [project]);
+  // Initialise le projet une seule fois
+  useEffect(() => {
+    if (!projectId || initRef.current) return;
 
-  // Ouvre la modale avec préremplissage
-  const handleAddEventWithPreset = (date: string, location: string) => {
-    setPresetDate(date);
-    setPresetLocation(location);
-    setIsModalOpen(true);
-  };
+    const initProject = async () => {
+      if (initializationRef.current) return;
+      try {
+        initializationRef.current = setActiveProject(projectId);
+        await initializationRef.current;
+        initRef.current = true;
+      } catch (err) {
+        initializationRef.current = null;
+      }
+    };
 
-  const handleAddEvent = () => {
-    setPresetDate(null);
-    setPresetLocation(null);
-    setIsModalOpen(true);
-  };
+    initProject();
 
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-20 bg-gray-200 rounded"></div>
-        <div className="h-20 bg-gray-200 rounded"></div>
+    return () => {
+      // Reset si changement de page ou unmount
+      initRef.current = false;
+      initializationRef.current = null;
+    };
+  }, [projectId, setActiveProject]);
+
+  // Gestion des erreurs et retry/backoff
+  useEffect(() => {
+    if (!error || !projectId || retryCount >= 3) return;
+
+    if (
+      error.message?.toLowerCase?.().includes("not found") ||
+      error.message?.toLowerCase?.().includes("non trouvé")
+    ) {
+      router.push("/projects?error=project-not-found");
+      return;
+    }
+
+    // Retry progressif
+    const timer = setTimeout(() => {
+      setRetryCount((prev) => prev + 1);
+      setActiveProject(projectId);
+    }, 1000 * (retryCount + 1));
+    return () => clearTimeout(timer);
+  }, [error, projectId, retryCount, router, setActiveProject]);
+
+  // Fonction de refresh à passer à PlanningPage
+  const refreshEvents = useCallback(async () => {
+    // Peut déclencher un refresh dans useActiveProjectStore, ou forcer un refresh du composant enfant
+    // Ici, on force juste le refresh du composant enfant
+    setRefreshKey((k) => k + 1);
+    // Ou, si tu exposes un reload dans le store : await reloadProject(projectId);
+  }, [projectId]);
+
+  // Séquence d’affichage
+  let content: React.ReactNode = null;
+
+  if (isLoading) {
+    content = (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loading
+          message={
+            retryCount > 0
+              ? `Nouvelle tentative (${retryCount}/3)...`
+              : "Chargement du projet..."
+          }
+          size="lg"
+        />
       </div>
+    );
+  } else if (error && retryCount >= 3) {
+    content = (
+      <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
+        <div className="text-red-500 text-xl mb-4 font-bold">
+          Une erreur est survenue lors du chargement du projet
+        </div>
+        <p className="text-gray-600 mb-6">{error.message}</p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={() => {
+              setRetryCount(0);
+              initRef.current = false;
+              setActiveProject(projectId);
+            }}
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition"
+          >
+            Réessayer
+          </button>
+          <button
+            onClick={() => router.push("/projects")}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+          >
+            Retourner à la liste des projets
+          </button>
+        </div>
+      </div>
+    );
+  } else if (!project && !isLoading) {
+    // Fin du chargement mais projet null
+    content = (
+      <div className="flex items-center justify-center min-h-screen">
+        Projet introuvable.
+      </div>
+    );
+  } else if (project) {
+    // Succès : passe project et refreshEvents à PlanningPage, et refreshKey pour forcer update
+    content = (
+      <PlanningPage
+        key={refreshKey}
+        project={project}
+        refreshEvents={refreshEvents}
+        loading={isLoading}
+      />
     );
   }
 
-  // Compte le nombre total d'events pour savoir si c'est vide
-  const totalEvents = useMemo(() => {
-    return planningData.dates.reduce((acc, date) => {
-      return (
-        acc +
-        Object.values(planningData.eventsByDate[date] || {}).reduce(
-          (sum, arr) => sum + arr.length,
-          0
-        )
-      );
-    }, 0);
-  }, [planningData]);
+  // Si pas encore d’ID projet, ne pas wrapper dans Layout
+  if (!project?.id) {
+    return content;
+  }
 
-  return (
-    <div className="max-w-7xl mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">📅 Planning du projet</h1>
-          <div className="text-gray-600 text-sm mb-2">
-            {project?.projectName}
-          </div>
-          {totalEvents === 0 && (
-            <p className="text-sm text-gray-500 max-w-2xl">
-              Constitue le planning de ton projet&nbsp;: ajoute les tournages,
-              pauses, montages, etc. Organise chaque journée en précisant la
-              date, l’horaire et le lieu de chaque événement.
-            </p>
-          )}
-        </div>
-        <Button variant="primary" size="default" onClick={handleAddEvent}>
-          + Ajouter un événement
-        </Button>
-      </div>
-
-      <div>
-        {totalEvents === 0 ? (
-          <EmptyState
-            onAddEvent={handleAddEvent}
-            onDuplicatePlanning={async (sourceProjectId) => {
-              // TODO: implémenter la duplication
-              await refreshEvents();
-            }}
-          />
-        ) : (
-          <div className="space-y-8">
-            {planningData.dates.map((date) => (
-              <div key={date}>
-                <div className="p-2">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {format(new Date(date), "EEEE d MMMM yyyy", {
-                      locale: fr,
-                    }).toUpperCase()}
-                  </h2>
-                </div>
-                <Card className="p-4 space-y-6">
-                  {Object.entries(planningData.eventsByDate[date]).map(
-                    ([location, locationEvents]) => (
-                      <div key={location}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <MapPin size={16} className="text-gray-500" />
-                            <span className="text-base font-semibold text-[#0a1747]">
-                              {location}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            className="ml-2 flex items-center justify-center w-8 h-8 rounded-full bg-[#19789b] text-white hover:bg-[#145a75] transition"
-                            title="Ajouter un événement à ce lieu"
-                            onClick={() =>
-                              handleAddEventWithPreset(date, location)
-                            }
-                          >
-                            <Plus size={20} />
-                          </button>
-                        </div>
-                        <div className="space-y-3">
-                          {locationEvents.map((event) => (
-                            <div
-                              key={event.id}
-                              className="p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition cursor-pointer"
-                              onClick={() => {
-                                setSelectedEvent(event);
-                                setDetailsModalOpen(true);
-                              }}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="font-medium text-gray-900">
-                                    {event.label}
-                                  </h3>
-                                  <p className="text-sm text-gray-500">
-                                    {formatHour(event.startTime)}
-                                    {event.endTime &&
-                                      ` - ${formatHour(event.endTime)}`}
-                                  </p>
-                                  {event.type && (
-                                    <div className="mt-1 text-xs text-blue-700 font-semibold uppercase">
-                                      {event.type}
-                                    </div>
-                                  )}
-                                </div>
-                                {/* Ajoute ici les participants ou autre info */}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  )}
-                </Card>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Modal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Ajouter un événement"
-      >
-        <CreateEventForm
-          projectId={project?.id || ""}
-          onClose={() => {
-            setIsModalOpen(false);
-            refreshEvents();
-          }}
-          presetDate={presetDate}
-          presetLocation={presetLocation}
-        />
-      </Modal>
-
-      {selectedEvent && (
-        <EventDetailsModal
-          event={selectedEvent}
-          open={detailsModalOpen}
-          onClose={() => {
-            setDetailsModalOpen(false);
-            setSelectedEvent(null);
-          }}
-          // Ajoute ici la gestion des membres si tu veux
-          members={[]}
-        />
-      )}
-    </div>
-  );
+  // Projet chargé : affichage avec Layout du projet
+  return <Layout params={{ id: project.id }}>{content}</Layout>;
 }

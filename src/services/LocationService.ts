@@ -1,3 +1,5 @@
+// src/services/LocationService.ts
+
 import { ILocationRepository } from "@/repositories/ILocationRepository";
 import { LocationRepository } from "@/repositories/LocationRepository";
 import { Location } from "@/types/entities/Location";
@@ -10,76 +12,96 @@ export class LocationService {
     this.locationRepository = repository || new LocationRepository();
   }
 
-  /** Crée une nouvelle localisation */
+  /**
+   * Crée une nouvelle localisation dans un projet
+   * @param projectId id du projet concerné
+   */
   async createLocation(
+    projectId: string,
     data: Omit<Location, "id" | "createdAt" | "updatedAt">
   ): Promise<Location> {
-    return this.locationRepository.create(data);
+    return this.locationRepository.create(projectId, data);
   }
 
-  /** Met à jour une localisation (avec gestion de la date de modification) */
+  /**
+   * Crée une localisation "globale" (publique ou company) HORS projet (pour la bibliothèque globale)
+   */
+  async createGlobalLocation(
+    data: Omit<Location, "id" | "createdAt" | "updatedAt">
+  ): Promise<Location> {
+    // Ici, le repo doit écrire dans "locations" (collection globale)
+    return this.locationRepository.createGlobal(data);
+  }
+
+  /** Met à jour une localisation d’un projet */
   async updateLocation(
+    projectId: string,
     id: string,
     data: Partial<Location>
   ): Promise<Location | null> {
-    // On force la mise à jour du champ updatedAt côté service
+    // Ajoute updatedAt
     const payload = {
       ...data,
       updatedAt: serverTimestamp() as Timestamp,
     };
-    return this.locationRepository.update(id, payload);
+    return this.locationRepository.update(projectId, id, payload);
   }
 
-  /** Supprime une localisation */
-  async deleteLocation(id: string): Promise<void> {
-    await this.locationRepository.delete(id);
+  /** Supprime une localisation d’un projet */
+  async deleteLocation(projectId: string, id: string): Promise<void> {
+    await this.locationRepository.delete(projectId, id);
   }
 
-  /** Récupère une localisation par son id */
-  async getLocationById(id: string): Promise<Location | null> {
-    return this.locationRepository.findById(id);
+  /** Récupère une localisation d’un projet par son id */
+  async getLocationById(
+    projectId: string,
+    id: string
+  ): Promise<Location | null> {
+    return this.locationRepository.findById(projectId, id);
   }
 
-  /** Récupère toutes les localisations créées par un utilisateur */
-  async getLocationsByCreator(userId: string): Promise<Location[]> {
-    return this.locationRepository.findByCreator(userId);
+  /** Récupère toutes les localisations du projet */
+  async getAllLocations(projectId: string): Promise<Location[]> {
+    return this.locationRepository.findAll(projectId);
   }
 
-  /** Liste toutes les localisations publiques */
+  /** Liste toutes les localisations PUBLIQUES (global) */
   async getPublicLocations(): Promise<Location[]> {
+    // Utilise la collection globale
     return this.locationRepository.findPublic();
   }
 
-  // ---- Méthodes métier potentielles à ajouter (exemples) ----
-
-  /** Marque une localisation comme "légitime" après vérification */
-  async markAsLegit(id: string, validatorId: string): Promise<Location | null> {
-    return this.updateLocation(id, {
-      isLegit: true,
-      // tu pourrais loguer qui a validé dans modificationHistory
-    });
-  }
-
-  /** Récupère toutes les localisations d'une entreprise */
+  /** Liste toutes les localisations d’une entreprise (global, HORS projet) */
   async getCompanyLocations(companyId: string): Promise<Location[]> {
     return this.locationRepository.findByCompany(companyId);
   }
 
-  /** Ajoute une note à une localisation */
+  /** Marque une localisation comme légitime (exemple d’enrichissement) */
+  async markAsLegit(
+    projectId: string,
+    id: string,
+    validatorId: string
+  ): Promise<Location | null> {
+    // Ajoute l’utilisateur dans l’historique si besoin
+    return this.updateLocation(projectId, id, {
+      isLegit: true,
+      // Possibilité: modificationHistory
+    });
+  }
+
+  /** Ajoute une note à une localisation du projet */
   async addNote(
+    projectId: string,
     id: string,
     note: string,
     userId: string
   ): Promise<Location | null> {
-    // Pourrait ajouter la note et un historique
-    return this.updateLocation(id, {
+    // Possibilité d’enrichir modificationHistory ici aussi
+    return this.updateLocation(projectId, id, {
       notes: note,
-      // Tu peux enrichir modificationHistory ici aussi si besoin
     });
   }
-
-  // Ajoute d'autres méthodes métier selon tes besoins spécifiques
 }
 
-// Pour l’import direct avec instance singleton si besoin
+// Singleton prêt à l’emploi
 export const locationService = new LocationService();

@@ -1,8 +1,8 @@
 // src/repositories/ProjectRepository.ts
 import { db } from "@/lib/firebase/client";
-import { Project } from "@/types/entities/Project";
-import { ProjectPrivacy } from "@/types/enums/ProjectPrivacy"; // Importer pour les valeurs par défaut si nécessaire
-import { ProjectStatus } from "@/types/enums/ProjectStatus"; // Importer pour les valeurs par défaut si nécessaire
+import { Project, ProjectDayPlanning } from "@/types/entities/Project";
+import { ProjectPrivacy } from "@/types/enums/ProjectPrivacy";
+import { ProjectStatus } from "@/types/enums/ProjectStatus";
 import {
   DocumentData,
   DocumentSnapshot,
@@ -10,7 +10,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
-  doc, // Pour un typage plus précis de docSnap
+  doc,
   documentId,
   getDoc,
   getDocs,
@@ -20,14 +20,32 @@ import {
 } from "firebase/firestore";
 import { IProjectRepository } from "./IProjectRepository";
 
+/** Utility pour parser dayPlannings */
+function mapFirestoreDayPlannings(data: any): ProjectDayPlanning[] {
+  if (!data || !Array.isArray(data)) return [];
+  return data.map((planning: any) => ({
+    date: typeof planning.date === "string" ? planning.date : "",
+    events: Array.isArray(planning.events)
+      ? planning.events.map((event: any) => ({
+          id: event.id || "",
+          label: event.label || "",
+          description: event.description || "",
+          type: event.type || "",
+          location: event.location || "",
+          startTime: event.startTime,
+          endTime: event.endTime,
+        }))
+      : [],
+  }));
+}
+
 const PROJECTS_COLLECTION = "projects";
 
 const mapDocToProject = (docSnap: DocumentSnapshot<DocumentData>): Project => {
   const data = docSnap.data();
-  if (!data) {
-    // Sécurité si data() est undefined, bien que exists() devrait le prévenir
+  if (!data)
     throw new Error(`No data found for project document ${docSnap.id}`);
-  }
+
   return {
     id: docSnap.id,
     projectName: data.projectName,
@@ -40,13 +58,14 @@ const mapDocToProject = (docSnap: DocumentSnapshot<DocumentData>): Project => {
     createdBy: data.createdBy,
     startDate: data.startDate as Timestamp,
     endDate: data.endDate as Timestamp,
-    privacy: data.privacy as ProjectPrivacy, // Cast vers l'enum
-    status: data.status as ProjectStatus, // Cast vers l'enum
+    privacy: data.privacy as ProjectPrivacy,
+    status: data.status as ProjectStatus,
     archived: data.archived || false,
     deleted: data.deleted || false,
     coverImageUrl: data.coverImageUrl || null,
     membersCount: data.membersCount || 0,
-    tags: data.tags || null,
+    tags: data.tags || [],
+    dayPlannings: mapFirestoreDayPlannings(data.dayPlannings), // robust here
   };
 };
 
@@ -54,10 +73,7 @@ export class ProjectRepository implements IProjectRepository {
   private projectsCollectionRef = collection(db, PROJECTS_COLLECTION);
 
   async findById(id: string): Promise<Project | null> {
-    if (!id || typeof id !== "string") {
-      console.error("ProjectRepository: findById called with invalid id:", id);
-      return null;
-    }
+    if (!id || typeof id !== "string") return null;
     const docRef = doc(db, PROJECTS_COLLECTION, id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
@@ -85,7 +101,6 @@ export class ProjectRepository implements IProjectRepository {
     );
     if (validValues.length === 0) return [];
 
-    // Firestore 'in' queries are limited, typically to 30 values.
     const CHUNK_SIZE = 30;
     const results: Project[] = [];
 
@@ -110,8 +125,11 @@ export class ProjectRepository implements IProjectRepository {
   }
 
   async create(data: Omit<Project, "id">): Promise<Project> {
-    // `createdAt` et `updatedAt` doivent être des serverTimestamps fournis par le service appelant dans `data`.
-    const docRef = await addDoc(this.projectsCollectionRef, data);
+    // Toujours dayPlannings: []
+    const docRef = await addDoc(this.projectsCollectionRef, {
+      ...data,
+      dayPlannings: data.dayPlannings || [],
+    });
     const newDocSnap = await getDoc(docRef);
     if (!newDocSnap.exists()) {
       throw new Error(
@@ -125,22 +143,35 @@ export class ProjectRepository implements IProjectRepository {
     id: string,
     data: Partial<Omit<Project, "id" | "createdAt" | "createdBy">>
   ): Promise<Project | null> {
-    if (!id || typeof id !== "string") {
-      console.error("ProjectRepository: update called with invalid id:", id);
-      return null;
-    }
-    // `updatedAt` doit être un serverTimestamp fourni par le service appelant dans `data`.
+    if (!id || typeof id !== "string") return null;
     const docRef = doc(db, PROJECTS_COLLECTION, id);
     await updateDoc(docRef, data);
     const updatedDocSnap = await getDoc(docRef);
     return updatedDocSnap.exists() ? mapDocToProject(updatedDocSnap) : null;
   }
 
+  async upsertDayPlanning(
+    projectId: string,
+    dayPlanning: ProjectDayPlanning
+  ): Promise<Project | null> {
+    const docRef = doc(db, PROJECTS_COLLECTION, projectId);
+    const projectSnap = await getDoc(docRef);
+    if (!projectSnap.exists()) return null;
+    const project = mapDocToProject(projectSnap);
+
+    const newDayPlannings = [
+      ...(project.dayPlannings || []).filter(
+        (p) => p.date !== dayPlanning.date
+      ),
+      dayPlanning,
+    ];
+    await updateDoc(docRef, { dayPlannings: newDayPlannings });
+    const updatedSnap = await getDoc(docRef);
+    return updatedSnap.exists() ? mapDocToProject(updatedSnap) : null;
+  }
+
   async delete(id: string): Promise<void> {
-    if (!id || typeof id !== "string") {
-      console.error("ProjectRepository: delete called with invalid id:", id);
-      return;
-    }
+    if (!id || typeof id !== "string") return;
     const docRef = doc(db, PROJECTS_COLLECTION, id);
     await deleteDoc(docRef);
   }

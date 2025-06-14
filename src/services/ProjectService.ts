@@ -1,3 +1,5 @@
+// src/services/ProjectService.ts
+
 import { IProjectMembershipRepository } from "@/repositories/IProjectMembershipRepository";
 import { IProjectRepository } from "@/repositories/IProjectRepository";
 import { ProjectMembershipRepository } from "@/repositories/ProjectMembershipRepository";
@@ -11,7 +13,7 @@ import { ProjectPrivacy } from "@/types/enums/ProjectPrivacy";
 import { ProjectStatus } from "@/types/enums/ProjectStatus";
 import { serverTimestamp, Timestamp } from "firebase/firestore";
 
-// Interface UI (mise à jour pour planning)
+// Interface pour les données de création côté UI (y compris planning)
 export interface CreateProjectData {
   projectName: string;
   acronym?: string | null;
@@ -24,7 +26,7 @@ export interface CreateProjectData {
   status: ProjectStatus;
   tags?: string[] | null;
   coverImageUrl?: string | null;
-  dayPlannings?: ProjectDayPlanning[]; // <-- planning par jour !
+  dayPlannings?: ProjectDayPlanning[]; // planning par jour, optionnel
 }
 
 export class ProjectService {
@@ -36,6 +38,10 @@ export class ProjectService {
     this.projectMembershipRepository = new ProjectMembershipRepository();
   }
 
+  /**
+   * Crée un projet Firestore + membership manager (créateur).
+   * Peut inclure un planning par jour (dayPlannings).
+   */
   async createProject(
     projectUiData: CreateProjectData,
     createdByUid: string
@@ -61,17 +67,18 @@ export class ProjectService {
       updatedAt: now,
       archived: false,
       deleted: false,
-      membersCount: 1, // Le créateur
-      dayPlannings: projectUiData.dayPlannings || [], // <-- Ajout planning ou tableau vide
+      membersCount: 1, // Créateur = 1
+      dayPlannings: projectUiData.dayPlannings || [], // toujours défini (tableau vide sinon)
     };
 
+    // Création projet
     const createdProject = await this.projectRepository.create(
       newProjectDataToStore
     );
     console.log("ProjectService: Project document created:", createdProject.id);
 
     if (createdProject && createdProject.id) {
-      // Créer l'appartenance pour le créateur
+      // Ajout du créateur comme membre manager
       const membershipDataForCreator: Omit<ProjectMembership, "id"> = {
         projectId: createdProject.id,
         userId: createdByUid,
@@ -95,6 +102,9 @@ export class ProjectService {
     return createdProject;
   }
 
+  /**
+   * Récupère un projet par ID (retourne null si supprimé ou inexistant)
+   */
   async getProjectById(projectId: string): Promise<Project | null> {
     if (!projectId) {
       console.warn("ProjectService: getProjectById called with no projectId.");
@@ -113,6 +123,27 @@ export class ProjectService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Ajoute ou met à jour un planning pour une date précise dans un projet.
+   */
+  async upsertDayPlanning(
+    projectId: string,
+    planning: ProjectDayPlanning
+  ): Promise<Project | null> {
+    return this.projectRepository.upsertDayPlanning(projectId, planning);
+  }
+
+  /**
+   * Liste tous les projets (optionnel)
+   */
+  async getAllProjects(): Promise<Project[]> {
+    return this.projectRepository.getAll();
+  }
+
+  async getProjectMemberships(projectId: string): Promise<ProjectMembership[]> {
+    return this.projectMembershipRepository.findProjectMembers(projectId);
   }
 }
 

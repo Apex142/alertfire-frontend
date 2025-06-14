@@ -1,13 +1,11 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import SelectWithSearch from "@/components/ui/SelectWithSearch";
-import { useFirestoreDoc } from "@/hooks/useFirestoreDoc";
-import { useProject } from "@/hooks/useProjects";
-import { db } from "@/lib/firebase";
 import type { Event } from "@/types/event";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import type { EventFormData } from "../CreateEventForm";
+import { useProject } from "@/hooks/useProject";
 
 interface EventType {
   code: string;

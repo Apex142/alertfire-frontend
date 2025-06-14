@@ -1,18 +1,13 @@
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import InputAddressAutocomplete from "@/components/ui/InputAddressAutocomplete";
-import { notify } from "@/lib/notify";
-import { useProjectContext } from "@/app/project/[id]/providers";
-import { cn } from "@/lib/utils";
-import { locationService } from "@/features/project/locations/locationService";
-import { Location, ProjectLocation } from "@/types/location";
-import { useUserData } from "@/hooks/useUserData";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/hooks/useCompany";
-import { motion, AnimatePresence } from "framer-motion";
-import { TypeStep } from "./steps/Step1TypeLocation";
+import { notify } from "@/lib/notify";
+import { locationService } from "@/services/LocationService";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { DetailsStep } from "./steps/DetailsStep";
 import { PolicyStep } from "./steps/PolicyStep";
+import { TypeStep } from "./steps/Step1TypeLocation";
 import { LocationFormState, Step } from "./types";
 
 type LocationType = "saved" | "public" | "new";
@@ -43,16 +38,15 @@ export default function AddLocationForm({
   const [publicLocations, setPublicLocations] = useState<Location[]>([]);
   const [companyLocations, setCompanyLocations] = useState<Location[]>([]);
 
-  const { user, userData } = useUserData();
-  const { data: currentCompany } = useCompany(userData?.companySelected || "", {
+  const { appUser } = useAuth();
+  const { data: currentCompany } = useCompany(appUser?.companySelected || "", {
     realtime: true,
   });
-  const { refreshEvents } = useProjectContext();
 
   useEffect(() => {
     const loadLocations = async () => {
       try {
-        if (!user) return;
+        if (!appUser) return;
 
         const [publicLocs, companyLocs] = await Promise.all([
           locationService.getPublicLocations(),
@@ -70,7 +64,7 @@ export default function AddLocationForm({
     };
 
     loadLocations();
-  }, [currentCompany, user]);
+  }, [currentCompany, appUser]);
 
   const handleStateChange = (updates: Partial<LocationFormState>) => {
     setFormState((prev) => ({ ...prev, ...updates }));
@@ -165,7 +159,7 @@ export default function AddLocationForm({
     console.log("Soumission du formulaire, étape actuelle:", step);
     console.log("État du formulaire:", formState);
 
-    if (!user) {
+    if (!appUser) {
       notify.error("Vous devez être connecté pour ajouter un lieu");
       return;
     }
@@ -188,7 +182,7 @@ export default function AddLocationForm({
           notes: formState.notes.trim() || undefined,
           isPublic: false,
           companyId: currentCompany?.id,
-          createdBy: user.uid,
+          createdBy: appUser.uid,
           editPolicy: formState.editPolicy,
         });
         console.log("ID du lieu global créé:", locationId);
@@ -219,7 +213,7 @@ export default function AddLocationForm({
         },
       });
 
-      await locationService.createProjectLocation(projectId, {
+      await locationService.createLocation(projectId, {
         label:
           formState.locationType === "new"
             ? formState.name.trim()
@@ -242,7 +236,6 @@ export default function AddLocationForm({
 
       notify.success("Lieu ajouté avec succès !");
       onSuccess();
-      refreshEvents();
     } catch (error) {
       console.error("Erreur lors de la création du lieu:", error);
       const message =

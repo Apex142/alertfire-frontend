@@ -4,8 +4,8 @@ import { Loading } from "@/components/ui/Loading";
 import ProjectDashboardClient from "@/features/project/dashboard/ProjectDashboardClient";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import Layout from "./layout";
 import { useActiveProjectStore } from "./useActiveProjectStore";
+import Layout from "./Layout";
 
 interface ProjectDashboardWrapperProps {
   projectId: string;

@@ -3,18 +3,11 @@ import {
   HydratedTechnician,
   mergeMembershipsWithUsers,
 } from "@/lib/utils/mergeMembershipsWithUsers";
+import { projectService } from "@/services/ProjectService";
 import { Project, ProjectDayEvent } from "@/types/entities/Project";
 import { ProjectMembership } from "@/types/entities/ProjectMembership";
 import { User } from "@/types/entities/User";
-
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { useCallback, useEffect, useState } from "react";
 
 type UseProjectResult = {
@@ -37,8 +30,8 @@ export function useProject(projectId?: string): UseProjectResult {
   const fetchProject = useCallback(async () => {
     if (!projectId) {
       setProject(null);
-      setEvents([]);
       setTechnicians([]);
+      setEvents([]);
       setNotFound(true);
       setLoading(false);
       return;
@@ -48,59 +41,47 @@ export function useProject(projectId?: string): UseProjectResult {
     setNotFound(false);
 
     try {
-      // 1. Project
-      const projectRef = doc(db, "projects", projectId);
-      const projectSnap = await getDoc(projectRef);
-      if (!projectSnap.exists()) {
-        setNotFound(true);
+      // 1. Projet principal (via service)
+      const loadedProject = await projectService.getProjectById(projectId);
+      if (!loadedProject) {
         setProject(null);
-        setEvents([]);
         setTechnicians([]);
+        setEvents([]);
+        setNotFound(true);
         setLoading(false);
         return;
       }
-      const projectData = {
-        id: projectSnap.id,
-        ...projectSnap.data(),
-      } as Project;
-      setProject(projectData);
+      setProject(loadedProject);
 
-      // 2. Events from dayPlannings
+      // 2. Events du planning
       let allEvents: ProjectDayEvent[] = [];
-      if (Array.isArray(projectData.dayPlannings)) {
-        allEvents = projectData.dayPlannings.flatMap((planning) =>
+      if (Array.isArray(loadedProject.dayPlannings)) {
+        allEvents = loadedProject.dayPlannings.flatMap((planning) =>
           Array.isArray(planning.events) ? planning.events : []
         );
       }
       setEvents(allEvents);
 
-      // 3. Memberships (technicians)
-      const techQuery = query(
-        collection(db, "project_memberships"),
-        where("projectId", "==", projectId)
-      );
-      const techSnap = await getDocs(techQuery);
-      const memberships: ProjectMembership[] = techSnap.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() } as ProjectMembership)
-      );
+      // 3. Récupère memberships (via service)
+      const memberships: ProjectMembership[] =
+        await projectService.getProjectMemberships(projectId);
 
-      // 4. Users (corresponding to memberships)
+      // 4. Récupère users (direct DB: pas dans ProjectService pour éviter complexité)
       const userIds = memberships.map((m) => m.userId);
-      // Firebase where("uid", "in", ...) max 10, donc faire en plusieurs fois si besoin
       const users: User[] = [];
       const chunkSize = 10;
       for (let i = 0; i < userIds.length; i += chunkSize) {
-        const idsChunk = userIds.slice(i, i + chunkSize);
-        if (idsChunk.length === 0) continue;
+        const chunk = userIds.slice(i, i + chunkSize);
+        if (!chunk.length) continue;
         const userQuery = query(
           collection(db, "users"),
-          where("uid", "in", idsChunk)
+          where("uid", "in", chunk)
         );
         const userSnap = await getDocs(userQuery);
-        users.push(...userSnap.docs.map((doc) => doc.data() as User));
+        users.push(...userSnap.docs.map((d) => d.data() as User));
       }
 
-      // 5. Merge memberships + users
+      // 5. Fusion memberships + infos user (hydrated)
       setTechnicians(mergeMembershipsWithUsers(memberships, users));
     } catch (err: any) {
       setError(err?.message || "Erreur inconnue");
