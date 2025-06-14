@@ -4,6 +4,8 @@ const config: CapacitorConfig = {
   appId: "com.showmate",
   appName: "Showmate",
 
+  webDir: "dist",
+
   server: {
     url: "http://192.168.1.61:3000", // Mets ici ton vrai domaine
     cleartext: true, // Optionnel, utile pour du http local/dev (en prod laisse https)
@@ -23,7 +25,7 @@ const config: CapacitorConfig = {
   plugins: {
     FirebaseAuthentication: {
       skipNativeAuth: false,
-      providers: ["apple.com", "facebook.com", "google.com"],
+      providers: ["google.com"],
     },
     SplashScreen: {
       launchShowDuration: 2500,
