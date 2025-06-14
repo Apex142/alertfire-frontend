@@ -2,6 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase/client";
 import { Project } from "@/types/entities/Project";
+import { ProjectMemberStatus } from "@/types/enums/ProjectMemberStatus";
 import { ProjectPrivacy } from "@/types/enums/ProjectPrivacy";
 import { ProjectStatus } from "@/types/enums/ProjectStatus";
 import {
@@ -86,7 +87,10 @@ export function useProjects() {
       const membershipsQuery = query(
         collection(db, "project_memberships"), // Collection racine
         where("userId", "==", userId),
-        where("status", "in", ["active", "pending"]) // Optionnel: ne récupérer que les memberships actifs ou en attente
+        where("status", "in", [
+          ProjectMemberStatus.APPROVED,
+          ProjectMemberStatus.PENDING,
+        ]) // Optionnel: ne récupérer que les memberships actifs ou en attente
       );
       const membershipsSnapshot = await getDocs(membershipsQuery);
 

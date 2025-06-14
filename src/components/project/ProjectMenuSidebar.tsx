@@ -90,7 +90,7 @@ export default function ProjectTabsBar() {
   };
 
   // --- Drawer mobile pour modules additionnels
-  const NAVBAR_HEIGHT = 56;
+  const NAVBAR_HEIGHT = 64;
 
   return (
     <>

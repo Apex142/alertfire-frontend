@@ -1,14 +1,15 @@
-import { IUserRepository } from "@/repositories/IUserRepository";
-import { UserRepository } from "@/repositories/UserRepository";
-import { sessionService } from "@/services/SessionService";
-import { Session } from "@/types/entities/Session";
-import { User } from "@/types/entities/User";
-import { AuthProviderType } from "@/types/enums/AuthProvider";
-import { GlobalRole } from "@/types/enums/GlobalRole";
+// src/services/AuthService.ts
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import { Timestamp, serverTimestamp } from "firebase/firestore";
 
-// User type = Capacitor user
+import type { IUserRepository } from "@/repositories/IUserRepository";
+import { UserRepository } from "@/repositories/UserRepository";
+import { sessionService } from "@/services/SessionService";
+import type { Session } from "@/types/entities/Session";
+import type { User } from "@/types/entities/User";
+import { AuthProviderType } from "@/types/enums/AuthProvider";
+import { GlobalRole } from "@/types/enums/GlobalRole";
+
 type CapacitorUser = {
   uid: string;
   email?: string | null;
@@ -25,11 +26,11 @@ export interface AuthResult {
 export class AuthService {
   private userRepository: IUserRepository;
 
-  constructor() {
-    this.userRepository = new UserRepository();
+  constructor(userRepository: IUserRepository = new UserRepository()) {
+    this.userRepository = userRepository;
   }
 
-  private async handleUserDocumentUpsert(
+  private async upsertUserDocument(
     firebaseUser: CapacitorUser,
     additionalData: Partial<
       Omit<
@@ -45,67 +46,70 @@ export class AuthService {
       >
     > = {}
   ): Promise<User | null> {
-    if (!firebaseUser) return null;
+    if (!firebaseUser || !firebaseUser.uid) return null;
 
-    let appUser = await this.userRepository.findById(firebaseUser.uid);
+    let user = await this.userRepository.findById(firebaseUser.uid);
     const now = serverTimestamp() as Timestamp;
 
-    if (!appUser) {
-      const newUserProfileData: Omit<User, "uid" | "createdAt" | "updatedAt"> =
-        {
-          email: firebaseUser.email || "",
-          displayName:
-            additionalData.displayName ||
-            firebaseUser.displayName ||
-            firebaseUser.email?.split("@")[0] ||
-            "Nouvel utilisateur",
-          photoURL: firebaseUser.photoUrl || null,
-          firstName: additionalData.firstName || "",
-          lastName: additionalData.lastName || "",
-          globalRole: GlobalRole.USER,
-          onboardingStep: 1,
-          onboardingCompleted: false,
-          preferences: {
-            theme: "light",
-            language: "fr",
-            notifications: true,
-            ...additionalData.preferences,
-          },
-          lastLogin: now,
-          fullAddress: additionalData.fullAddress || "",
-          legalStatus: additionalData.legalStatus || "",
-          phone: additionalData.phone || "",
-          position: additionalData.position || "",
-          intent: additionalData.intent || "",
-          companies: additionalData.companies || [],
-          companySelected: additionalData.companySelected || null,
-          favoriteLocationIds: additionalData.favoriteLocationIds || [],
-        };
-      appUser = await this.userRepository.create(
-        newUserProfileData as Omit<User, "uid">,
-        firebaseUser.uid
-      );
+    if (!user) {
+      const newUser: Omit<User, "uid" | "createdAt" | "updatedAt"> = {
+        email: firebaseUser.email || "",
+        displayName:
+          additionalData.displayName ||
+          firebaseUser.displayName ||
+          firebaseUser.email?.split("@")[0] ||
+          "Nouvel utilisateur",
+        photoURL: firebaseUser.photoUrl || null,
+        firstName: additionalData.firstName || "",
+        lastName: additionalData.lastName || "",
+        globalRole: GlobalRole.USER,
+        onboardingStep: 1,
+        onboardingCompleted: false,
+        preferences: {
+          theme: "light",
+          language: "fr",
+          notifications: true,
+          ...additionalData.preferences,
+        },
+        lastLogin: now,
+        fullAddress: additionalData.fullAddress || "",
+        legalStatus: additionalData.legalStatus || "",
+        phone: additionalData.phone || "",
+        position: additionalData.position || "",
+        intent: additionalData.intent || "",
+        companies: additionalData.companies || [],
+        companySelected: additionalData.companySelected || null,
+        favoriteLocationIds: additionalData.favoriteLocationIds || [],
+      };
+
+      user = await this.userRepository.create(newUser, firebaseUser.uid);
     } else {
       const updates: Partial<User> = {
         lastLogin: now,
         updatedAt: now,
-        ...(firebaseUser.photoUrl &&
-          firebaseUser.photoUrl !== appUser.photoURL && {
-            photoURL: firebaseUser.photoUrl,
-          }),
         ...(firebaseUser.displayName &&
-          firebaseUser.displayName !== appUser.displayName && {
+          firebaseUser.displayName !== user.displayName && {
             displayName: firebaseUser.displayName,
+          }),
+        ...(firebaseUser.photoUrl &&
+          firebaseUser.photoUrl !== user.photoURL && {
+            photoURL: firebaseUser.photoUrl,
           }),
       };
       if (Object.keys(updates).length > 0) {
-        appUser = await this.userRepository.update(firebaseUser.uid, updates);
+        user = await this.userRepository.update(firebaseUser.uid, updates);
       }
     }
-    return appUser;
+
+    return user;
   }
 
-  // Sign in with provider (exemple ici Google, tu peux étendre à Apple, Facebook, etc)
+  async createDefaultProfile(firebaseUser: CapacitorUser): Promise<User> {
+    const user = await this.upsertUserDocument(firebaseUser);
+    if (!user) throw new Error("Création du profil utilisateur échouée.");
+    return user;
+  }
+
   async signInWithProvider(
     providerType: AuthProviderType
   ): Promise<AuthResult> {
@@ -114,21 +118,19 @@ export class AuthService {
       case AuthProviderType.GOOGLE:
         result = await FirebaseAuthentication.signInWithGoogle();
         break;
-      // case AuthProviderType.APPLE:
-      //   result = await FirebaseAuthentication.signInWithApple();
-      //   break;
-      // Ajoute d'autres providers ici...
       default:
         throw new Error(`Provider ${providerType} non supporté.`);
     }
+
     const firebaseUser = result.user;
-    const appUser = await this.handleUserDocumentUpsert(firebaseUser);
+    const appUser = await this.upsertUserDocument(firebaseUser);
     const device =
       typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
     const session = await sessionService.createSession({
       uid: firebaseUser.uid,
       device,
     });
+
     return { userCredential: result, appUser, session };
   }
 
@@ -138,13 +140,14 @@ export class AuthService {
       password,
     });
     const firebaseUser = result.user;
-    const appUser = await this.handleUserDocumentUpsert(firebaseUser);
+    const appUser = await this.upsertUserDocument(firebaseUser);
     const device =
       typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
     const session = await sessionService.createSession({
       uid: firebaseUser.uid,
       device,
     });
+
     return { userCredential: result, appUser, session };
   }
 
@@ -173,7 +176,6 @@ export class AuthService {
     });
     const firebaseUser = result.user;
 
-    // set displayName si possible
     const displayName = `${additionalData.firstName || ""} ${
       additionalData.lastName || ""
     }`.trim();
@@ -181,26 +183,19 @@ export class AuthService {
       await FirebaseAuthentication.updateProfile({ displayName });
     }
 
-    const appUser = await this.handleUserDocumentUpsert(firebaseUser, {
+    const appUser = await this.upsertUserDocument(firebaseUser, {
       displayName: displayName || undefined,
       ...additionalData,
     });
+
     const device =
       typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
     const session = await sessionService.createSession({
       uid: firebaseUser.uid,
       device,
     });
-    return { userCredential: result, appUser, session };
-  }
 
-  async getAppUserProfile(uid: string): Promise<User | null> {
-    try {
-      return await this.userRepository.findById(uid);
-    } catch (error) {
-      console.error("Error fetching app user profile in AuthService:", error);
-      return null;
-    }
+    return { userCredential: result, appUser, session };
   }
 
   async signOutUser(currentSessionId?: string): Promise<void> {
@@ -209,9 +204,9 @@ export class AuthService {
         await sessionService.revokeSession(currentSessionId);
       }
       await FirebaseAuthentication.signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-      throw error;
+    } catch (err) {
+      console.error("Erreur de déconnexion :", err);
+      throw err;
     }
   }
 
@@ -219,18 +214,30 @@ export class AuthService {
     try {
       await sessionService.revokeAllSessions(uid);
       await FirebaseAuthentication.signOut();
-    } catch (error) {
-      console.error("Error signing out all devices:", error);
-      throw error;
+    } catch (err) {
+      console.error("Erreur lors de la déconnexion globale :", err);
+      throw err;
     }
   }
 
   async sendPasswordReset(email: string): Promise<void> {
     try {
       await FirebaseAuthentication.sendPasswordResetEmail({ email });
-    } catch (error) {
-      console.error("Error sending password reset email:", error);
-      throw error;
+    } catch (err) {
+      console.error(
+        "Erreur lors de l'envoi du mail de réinitialisation :",
+        err
+      );
+      throw err;
+    }
+  }
+
+  async getAppUserProfile(uid: string): Promise<User | null> {
+    try {
+      return await this.userRepository.findById(uid);
+    } catch (err) {
+      console.error("Erreur lors de la récupération du profil :", err);
+      return null;
     }
   }
 
@@ -243,6 +250,7 @@ export class AuthService {
     if (Object.keys(updatableData).length === 0) {
       throw new Error("Aucune donnée à mettre à jour.");
     }
+
     if (updatableData.displayName) {
       await FirebaseAuthentication.updateProfile({
         displayName: updatableData.displayName,
@@ -253,6 +261,7 @@ export class AuthService {
         photoUrl: updatableData.photoURL,
       });
     }
+
     return this.userRepository.update(userId, {
       ...updatableData,
       updatedAt: serverTimestamp() as Timestamp,
@@ -260,24 +269,20 @@ export class AuthService {
   }
 
   async deleteCurrentUserAccount(currentSessionId?: string): Promise<void> {
-    // get current user from capacitor
-    const { user: currentUser } = await FirebaseAuthentication.getCurrentUser();
-    if (!currentUser) {
-      throw new Error("Aucun utilisateur n'est actuellement connecté.");
-    }
+    const { user } = await FirebaseAuthentication.getCurrentUser();
+    if (!user) throw new Error("Aucun utilisateur connecté.");
+
     try {
       if (currentSessionId) {
         await sessionService.revokeSession(currentSessionId);
       }
-      await this.userRepository.delete(currentUser.uid);
+      await this.userRepository.delete(user.uid);
       await FirebaseAuthentication.deleteUser();
-    } catch (error: any) {
-      if (error?.code === "auth/requires-recent-login") {
-        throw new Error(
-          "Cette opération nécessite une ré-authentification récente. Veuillez vous reconnecter et réessayer."
-        );
+    } catch (err: any) {
+      if (err?.code === "auth/requires-recent-login") {
+        throw new Error("Reconnectez-vous pour supprimer votre compte.");
       }
-      throw error;
+      throw err;
     }
   }
 }
