@@ -1,25 +1,20 @@
-// src/lib/email/emailTemplateRegistry.ts
+import { addedEmailHtml } from "@/emailTemplates/addedEmail";
+import { inviteEmailHtml } from "@/emailTemplates/inviteEmail";
+import { memberRemovedEmailHtml } from "@/emailTemplates/memberRemovedEmail";
 import { EmailType } from "@/types/enums/EmailType";
+import { IEmailTemplate } from "./IEmailTemplate";
 
-export const emailTemplateRegistry: Record<EmailType, (data: any) => string> = {
-  [EmailType.PROJECT_INVITATION]: (data) => `
-    <div>
-      <h2>Invitation au projet "${data.projectName}"</h2>
-      <p>Bonjour ${data.firstName},</p>
-      <p>Vous avez été invité(e) à rejoindre le projet <strong>${data.projectName}</strong> en tant que <strong>${data.roleLabel}</strong>.</p>
-      <p>À bientôt sur ShowMate !</p>
-    </div>
-  `,
-  [EmailType.PROJECT_INVITATION_PENDING]: (data) => `
-    <div>
-      <h2>Invitation en attente pour le projet "${data.projectName}"</h2>
-      <p>Bonjour ${data.firstName},</p>
-      <p>Vous avez été invité(e) à rejoindre le projet <strong>${data.projectName}</strong> en tant que <strong>${data.roleLabel}</strong>.</p>
-      <p>
-        <a href="${data.acceptUrl}">Cliquez ici pour accepter l'invitation</a>
-      </p>
-      <p>À bientôt sur ShowMate !</p>
-    </div>
-  `,
-  // Ajoute d'autres templates ici...
+export const emailTemplateRegistry: Record<EmailType, IEmailTemplate<any>> = {
+  [EmailType.PROJECT_REMOVED]: {
+    defaultSubject: ({ projectName }) => `Retrait du projet : ${projectName}`,
+    html: memberRemovedEmailHtml,
+  },
+  [EmailType.PROJECT_INVITATION_PENDING]: {
+    defaultSubject: ({ projectName }) => `Invitation au projet ${projectName}`,
+    html: inviteEmailHtml,
+  },
+  [EmailType.PROJECT_ADDED]: {
+    defaultSubject: ({ projectName }) => `Ajout au projet : ${projectName}`,
+    html: addedEmailHtml,
+  },
 };

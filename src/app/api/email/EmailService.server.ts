@@ -1,66 +1,46 @@
-import { EmailType } from "@/types/enums/EmailType";
+/* lib/email/EmailService.server.ts */
+import { IEmailTemplate } from "@/lib/email/IEmailTemplate";
 import { emailTemplateRegistry } from "@/lib/email/emailTemplateRegistry";
-import nodemailer from "nodemailer";
-
-// Provider Nodemailer adapté server only
-class NodemailerProvider {
-  private transporter: any;
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: { rejectUnauthorized: false },
-    });
-  }
-  async send(options: {
-    to: string;
-    subject: string;
-    html: string;
-    text: string;
-  }) {
-    const fromName = process.env.SMTP_FROM_NAME || "ShowMate";
-    const fromEmail = process.env.SMTP_FROM_EMAIL!;
-    await this.transporter.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
-      to: options.to,
-      subject: options.subject,
-      text: options.text,
-      html: options.html,
-    });
-  }
-}
+import { EmailType } from "@/types/enums/EmailType";
+import { NodemailerProvider } from "./NodemailerProvider";
 
 export class EmailService {
-  private provider: NodemailerProvider;
-  constructor(provider?: NodemailerProvider) {
-    this.provider = provider || new NodemailerProvider();
-  }
+  constructor(
+    private provider: NodemailerProvider = new NodemailerProvider()
+  ) {}
 
-  async sendTransactionalEmail(
+  /**
+   * Envoie n'importe quel email transactionnel.
+   * @param type   Type d'email (clé du registry)
+   * @param to     Destinataire
+   * @param data   Données passées au template
+   * @param overrides  Permet d'écraser sujet / html / texte
+   */
+  async sendTransactionalEmail<Data = unknown>(
     type: EmailType,
-    recipientEmail: string,
-    data: any,
-    subject?: string,
-    text?: string
-  ) {
-    const templateFn = emailTemplateRegistry[type];
-    if (!templateFn) {
-      throw new Error(`Email template pour le type "${type}" non trouvé.`);
+    to: string,
+    data: Data,
+    overrides?: Partial<{
+      subject: string;
+      html: string;
+      text: string;
+    }>
+  ): Promise<void> {
+    const template: IEmailTemplate<Data> | undefined =
+      emailTemplateRegistry[type];
+    if (!template) {
+      throw new Error(`Template non défini pour le type « ${type} ».`);
     }
-    const html = templateFn(data);
-    const finalSubject =
-      subject ?? `Invitation au projet ${data.projectName || ""}`;
-    const finalText = text ?? html.replace(/<[^>]+>/g, "");
-    await this.provider.send({
-      to: recipientEmail,
-      subject: finalSubject,
-      html,
-      text: finalText,
-    });
+
+    /* Génère contenu à partir du template */
+    const html = overrides?.html ?? template.html(data);
+    const subject = overrides?.subject ?? template.defaultSubject(data);
+    const text =
+      overrides?.text ??
+      template.text?.(data) ??
+      // Fallback : strip HTML tags
+      html.replace(/<[^>]+>/g, "");
+
+    await this.provider.sendMail({ to, subject, html, text });
   }
 }

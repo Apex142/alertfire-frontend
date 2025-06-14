@@ -1,3 +1,5 @@
+// src/app/api/project/invite/route.ts
+
 import {
   AppError,
   ConflictError,
@@ -7,6 +9,7 @@ import {
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { InvitationSchema } from "@/types/dtos/invitation.dto";
 import { EmailType } from "@/types/enums/EmailType";
+import { NotificationType } from "@/types/enums/NotificationType";
 import { ProjectMemberPermission } from "@/types/enums/ProjectMemberPermission";
 import { ProjectMemberStatus } from "@/types/enums/ProjectMemberStatus";
 import { NextRequest, NextResponse } from "next/server";
@@ -30,19 +33,16 @@ export async function POST(req: NextRequest) {
     const validation = InvitationSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        {
-          error: "Données de la requête invalides.",
-          details: validation.error.flatten(),
-        },
+        { error: "Données invalides.", details: validation.error.flatten() },
         { status: 400 }
       );
     }
     const invitationData = validation.data;
 
-    // 3. Vérification de l'expéditeur
+    // 3. Vérifie l'expéditeur
     if (decodedToken.uid !== invitationData.invitedByUid) {
       throw new ForbiddenError(
-        "L'utilisateur authentifié ne correspond pas à l'expéditeur de l'invitation."
+        "L'utilisateur authentifié n'est pas l'expéditeur."
       );
     }
 
@@ -52,24 +52,25 @@ export async function POST(req: NextRequest) {
       .doc(invitationData.technicianUid)
       .get();
     if (!userSnap.exists) {
-      throw new NotFoundError("L'utilisateur à inviter n'a pas été trouvé.");
+      throw new NotFoundError("Utilisateur à inviter introuvable.");
     }
-    const userToInvite = { uid: userSnap.id, ...userSnap.data() };
+    const userToInvite = { uid: userSnap.id, ...userSnap.data() } as any;
 
-    // 5. Vérifie s'il existe déjà un membership
+    // 5. Vérifie si déjà membre
     const membershipQuery = await adminDb
       .collection("project_memberships")
       .where("projectId", "==", invitationData.projectId)
       .where("userId", "==", invitationData.technicianUid)
       .limit(1)
       .get();
-    const existingMembership = !membershipQuery.empty
-      ? { id: membershipQuery.docs[0].id, ...membershipQuery.docs[0].data() }
-      : null;
+    const existing = membershipQuery.empty
+      ? null
+      : { id: membershipQuery.docs[0].id, ...membershipQuery.docs[0].data() };
+
     if (
-      existingMembership &&
+      existing &&
       [ProjectMemberStatus.APPROVED, ProjectMemberStatus.PENDING].includes(
-        existingMembership.status
+        existing.status
       )
     ) {
       throw new ConflictError(
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6. Crée le membership
+    // 6. Création du membership
     const isPending = invitationData.status === ProjectMemberStatus.PENDING;
     const membershipRef = await adminDb.collection("project_memberships").add({
       userId: invitationData.technicianUid,
@@ -90,37 +91,61 @@ export async function POST(req: NextRequest) {
       invitedBy: invitationData.invitedByUid,
       joinedAt: new Date(),
     });
-    const newMembershipSnap = await membershipRef.get();
-    const newMembership = { id: membershipRef.id, ...newMembershipSnap.data() };
+    const membershipId = membershipRef.id;
 
-    // 7. Crée la notification via le service (admin/server only)
+    // 7. Notification & Email
     const notificationService = new NotificationService();
-    await notificationService.createProjectInviteNotification(
-      userToInvite,
-      invitationData
-    );
-
-    // 8. Envoi de l'email d'invitation via EmailService factorisé
-    const emailType = isPending
-      ? EmailType.PROJECT_INVITATION_PENDING
-      : EmailType.PROJECT_INVITATION;
-    const userData = userSnap.data() || {};
-    const emailData = {
-      firstName: userData.firstName || userData.displayName || "",
-      projectName: invitationData.projectName,
-      roleLabel: invitationData.role.label,
-      acceptUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/project/${invitationData.projectId}/invitations/accept?membership=${newMembership.id}`,
-    };
-
     const emailService = new EmailService();
-    await emailService.sendTransactionalEmail(
-      emailType,
-      userData.email,
-      emailData
-    );
 
+    const firstName = userToInvite.firstName || userToInvite.displayName || "";
+
+    if (isPending) {
+      // a) Invitation (PENDING)
+      await notificationService.createProjectInviteNotification(
+        userToInvite,
+        invitationData
+      );
+
+      await emailService.sendTransactionalEmail(
+        EmailType.PROJECT_INVITATION_PENDING,
+        userToInvite.email,
+        {
+          firstName,
+          projectName: invitationData.projectName,
+          roleLabel: invitationData.role.label,
+          acceptUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/project/${invitationData.projectId}/invitations/accept?membership=${membershipId}`,
+          projectId: invitationData.projectId,
+          invitedByUid: invitationData.invitedByUid,
+          membershipId,
+        }
+      );
+    } else {
+      // b) Ajout direct (APPROVED)
+      await notificationService.create({
+        userId: userToInvite.uid,
+        type: NotificationType.PROJECT_INVITATION,
+        message: `Vous avez été ajouté au projet "${invitationData.projectName}".`,
+        context: { projectId: invitationData.projectId },
+      });
+
+      await emailService.sendTransactionalEmail(
+        EmailType.PROJECT_ADDED,
+        userToInvite.email,
+        {
+          firstName,
+          projectName: invitationData.projectName,
+        }
+      );
+    }
+
+    // 8. Réponse
     return NextResponse.json(
-      { success: true, message: "Invitation envoyée avec succès." },
+      {
+        success: true,
+        message: isPending
+          ? "Invitation envoyée avec succès."
+          : "Membre ajouté directement.",
+      },
       { status: 201 }
     );
   } catch (error) {

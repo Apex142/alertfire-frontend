@@ -1,9 +1,10 @@
 import { useActiveProjectStore } from "@/app/project/[id]/useActiveProjectStore";
 import { Button } from "@/components/ui/Button";
 import Stepper from "@/components/ui/Stepper";
+import { useAuth } from "@/contexts/AuthContext";
 import { notify } from "@/lib/notify";
 import { ProjectMemberStatus } from "@/types/enums/ProjectMemberStatus";
-import { getAuth } from "firebase/auth";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import StepRoleSelect from "./Step1RoleSelect";
@@ -56,9 +57,8 @@ export default function AddRoleFlow({
     if (step > 0) setStep(step - 1);
   };
 
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
-  const currentUserId = currentUser?.uid ?? "system";
+  const { appUser } = useAuth();
+  const currentUserId = appUser?.uid ?? "system";
 
   const steps = [
     {
@@ -141,7 +141,7 @@ export default function AddRoleFlow({
 
     try {
       // Récupérer le token Firebase ID
-      const idToken = await auth.currentUser?.getIdToken(true);
+      const idToken = (await FirebaseAuthentication.getIdToken()).token;
       if (!idToken) throw new Error("Utilisateur non authentifié");
 
       // Appel API sécurisée

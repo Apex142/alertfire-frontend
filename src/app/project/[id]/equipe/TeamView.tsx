@@ -6,7 +6,9 @@ import Modal from "@/components/ui/Modal";
 import AddRoleFlow from "@/features/project/roles/add/AddRoleFlow";
 import { useProject } from "@/hooks/useProject";
 import { ProjectMemberStatus } from "@/types/enums/ProjectMemberStatus";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import clsx from "clsx";
+import { getAuth } from "firebase/auth";
 import {
   ArrowLeftCircle,
   ArrowRightCircle,
@@ -52,11 +54,13 @@ export default function TeamView({ initialProject }: { initialProject: any }) {
   const left = prevIdx !== null ? members[prevIdx] : null;
   const right = nextIdx !== null ? members[nextIdx] : null;
 
+  const auth = getAuth();
+
   // Statut d’affichage
   const status = useMemo(() => {
     if (!main) return {};
     switch (main.status) {
-      case ProjectMemberStatus.ACTIVE:
+      case ProjectMemberStatus.APPROVED:
         return {
           label: "Actif",
           color: "bg-green-100 text-green-700 border-green-200 ring-green-100",
@@ -158,7 +162,9 @@ export default function TeamView({ initialProject }: { initialProject: any }) {
     setConfirmRemove(false);
     setSettingsOpen(false);
     try {
-      const idToken = await window.firebase?.auth?.currentUser?.getIdToken?.();
+      const idToken = (await FirebaseAuthentication.getIdToken()).token;
+      if (!idToken) throw new Error("Utilisateur non authentifié");
+
       const res = await fetch("/api/project/member", {
         method: "DELETE",
         headers: {
@@ -170,15 +176,23 @@ export default function TeamView({ initialProject }: { initialProject: any }) {
           userId: main.userId,
           projectId: project.id,
           projectName: project.projectName,
+          removedByUid: auth.currentUser?.uid, // 🔥 Obligatoire
         }),
       });
-      if (!res.ok) throw new Error("Erreur lors du retrait du membre.");
-      // Ne touche pas à members : c’est le hook qui va réhydrater la liste.
+
+      if (!res.ok) {
+        const error = await res.json();
+        console.error("Erreur backend :", error);
+        throw new Error(error?.error || "Erreur lors du retrait du membre.");
+      }
+
+      // Maj de l'index local si besoin
       if (members.length > 1) {
         setIndex((i) => Math.max(0, i - (i === members.length - 1 ? 1 : 0)));
       }
     } catch (e) {
       alert("Erreur lors du retrait du membre.");
+      console.error(e);
     }
   };
 

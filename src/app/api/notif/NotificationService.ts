@@ -7,18 +7,20 @@ import { NotificationType } from "@/types/enums/NotificationType";
 import { FieldValue } from "firebase-admin/firestore";
 
 /**
- * Service réservé côté API (Node/server only, jamais client).
+ * Service réservé au back-end (API routes / server actions).
  */
 export class NotificationService {
-  private notificationRepository: INotificationRepository;
+  private readonly notificationRepository: INotificationRepository;
 
-  constructor(repository?: INotificationRepository) {
-    this.notificationRepository = repository || new NotificationRepository();
+  constructor(
+    repository: INotificationRepository = new NotificationRepository()
+  ) {
+    this.notificationRepository = repository;
   }
 
-  /**
-   * Crée une notification pour une invitation à un projet.
-   */
+  /* -------------------------------------------------------------------------- */
+  /*  INVITATION – ENVOYÉE                                                      */
+  /* -------------------------------------------------------------------------- */
   async createProjectInviteNotification(
     userToInvite: User,
     invitationData: InvitationDto
@@ -37,9 +39,9 @@ export class NotificationService {
     });
   }
 
-  /**
-   * Crée une notification pour acceptation d'invitation.
-   */
+  /* -------------------------------------------------------------------------- */
+  /*  INVITATION – ACCEPTÉE                                                     */
+  /* -------------------------------------------------------------------------- */
   async createInviteAcceptedNotification(
     inviter: User,
     accepter: User,
@@ -53,15 +55,39 @@ export class NotificationService {
       type: NotificationType.PROJECT_INVITE_ACCEPTED,
       message,
       context: {
-        projectId: inviter.companySelected, // Adapter si besoin
+        projectId: inviter.companySelected, // adapte si nécessaire
         acceptedBy: accepter.uid,
       },
     });
   }
 
-  /**
-   * Générique: création d'une notification.
-   */
+  /* -------------------------------------------------------------------------- */
+  /*  MEMBRE RETIRÉ                                                             */
+  /* -------------------------------------------------------------------------- */
+  async createProjectRemovedNotification(
+    removedUser: User,
+    removalData: {
+      projectId: string;
+      projectName: string;
+      removedByUid: string;
+    }
+  ): Promise<void> {
+    const message = `Vous avez été retiré du projet "${removalData.projectName}".`;
+
+    await this.create({
+      userId: removedUser.uid,
+      type: NotificationType.PROJECT_REMOVED_FROM,
+      message,
+      context: {
+        projectId: removalData.projectId,
+        removedBy: removalData.removedByUid,
+      },
+    });
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*  MÉTHODE GÉNÉRIQUE                                                          */
+  /* -------------------------------------------------------------------------- */
   private async create(
     data: Omit<Notification, "id" | "createdAt" | "read">
   ): Promise<Notification> {
@@ -70,6 +96,7 @@ export class NotificationService {
       read: false,
       createdAt: FieldValue.serverTimestamp(),
     };
+
     return this.notificationRepository.create(notificationData);
   }
 }
