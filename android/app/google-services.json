@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "723562152166",
+    "project_id": "showmate-8306a",
+    "storage_bucket": "showmate-8306a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:723562152166:android:10f7d04ba2f740bc163b27",
+        "android_client_info": {
+          "package_name": "com.showmate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "723562152166-roatvg1anffldbnao5rdl3cnv774rb0b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.showmate",
+            "certificate_hash": "13886cf7ec3b9ba51479d2f5187ea1789eebd44c"
+          }
+        },
+        {
+          "client_id": "723562152166-qsa3h9u8chfvt8u10o44k5gtoa5bctdf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmwDQj5toPqk7YwVhYTF292qov_LI5ozs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "723562152166-qsa3h9u8chfvt8u10o44k5gtoa5bctdf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
