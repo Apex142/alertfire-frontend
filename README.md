@@ -1,24 +1,24 @@
-# 📆 alertfire – Plateforme de gestion événementielle
+# 📛 AlertFire – Plateforme de coordination d’événements terrain
 
-**alertfire** est une application web dédiée à la planification et la gestion des événements audiovisuels, culturels et professionnels.
+**AlertFire** est une application web moderne dédiée à la **gestion d’équipes, de lieux et de logistique pour des projets événementiels ou audiovisuels**.
 
-Elle facilite l'organisation de tournages, congrès, festivals, événements d'entreprise ou associatifs, en centralisant la gestion des équipes, du matériel, des feuilles de service, des lieux, et des communications.
+Conçue pour les **tournages, festivals, événements associatifs ou d’entreprise**, elle centralise **les plannings, les affectations, les feuilles de service et la communication terrain**.
 
 ---
 
-## 🚀 Fonctionnalités principales
+## 🚀 Fonctionnalités clés
 
-- **Gestion de project événementiel**  
-  Créez des projects, ajoutez des événements (jours, créneaux), définissez des plannings précis.
+- 🔧 **Gestion complète de projets événementiels**  
+  Créez un projet, ajoutez des événements (jours, créneaux horaires), assignez les rôles et gérez l’organisation au quotidien.
 
-- **Réseau de techniciens et bénévoles**  
-  Répartissez les postes sur les événements à partir de votre réseau.
+- 🧑‍🤝‍🧑 **Réseau de techniciens, bénévoles et collaborateurs**  
+  Invitez des personnes à rejoindre votre projet, répartissez les postes, suivez les affectations.
 
-- **Feuilles de service journalières**  
-  Accès simplifié pour chaque technicien à ses horaires, fonctions et infos pratiques.
+- 📄 **Feuilles de service dynamiques**  
+  Chaque membre accède à ses horaires, fonctions, contacts et infos pratiques jour par jour.
 
-- **Base de données de lieux partagée**  
-  Référencement collaboratif des lieux avec fiches techniques, contacts, historique d’utilisation.
+- 📍 **Base collaborative de lieux**  
+  Créez ou partagez des lieux avec fiches techniques, historique d’usage, accès et contacts.
 
 ---
 
@@ -28,6 +28,18 @@ Elle facilite l'organisation de tournages, congrès, festivals, événements d'e
 - **Backend (BaaS)** : Firebase
   - Firestore (base de données temps réel)
   - Firebase Auth (authentification)
-  - Firebase Storage (fichiers)
+  - Firebase Storage (gestion de fichiers)
 - **État local** : Zustand
-- **Déploiement** : Vercel (Next.js) / Firebase Hosting
+- **Déploiement** : Vercel (Next.js) + Firebase Hosting
+
+---
+
+## 💡 Objectif
+
+Offrir un outil simple, efficace et collaboratif pour les chefs de projet, régisseurs et coordinateurs terrain.
+
+---
+
+## 📬 Contact
+
+Développé par l’équipe **AlertFire** – Pour toute question ou suggestion, contactez-nous sur [votre.email@exemple.com](mailto:votre.email@exemple.com)
