@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
@@ -35,6 +36,14 @@ const config: CapacitorConfig = {
       splashImmersive: true,
     },
   },
+=======
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.apex.alertfire',
+  appName: 'alertfire',
+  webDir: 'public'
+>>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
 };
 
 export default config;

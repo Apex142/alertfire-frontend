@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // src/app/page.tsx (ou le chemin vers votre page d'accueil/login)
 "use client";
 
@@ -30,11 +31,33 @@ export default function HomePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background dark:bg-gray-900">
         {/* Assurez-vous que bg-background est défini dans votre Tailwind config ou global.css */}
+=======
+"use client";
+
+import "leaflet/dist/leaflet.css";
+import { useState } from "react";
+
+import LoginForm from "@/components/auth/LoginForm";
+import SignupForm from "@/components/auth/SignupForm";
+import MapView from "@/components/MapView/MapView"; // ✅ import direct
+import { Loading } from "@/components/ui/Loading";
+import { useAuth } from "@/contexts/AuthContext";
+
+export default function HomePage() {
+  const [showSignup, setShowSignup] = useState(false);
+  const { appUser, firebaseUser, loading } = useAuth();
+  const isAuthenticated = !!(appUser || firebaseUser);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background dark:bg-gray-900">
+>>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
         <Loading message="Chargement..." size="lg" />
       </div>
     );
   }
 
+<<<<<<< HEAD
   // Si l'utilisateur est authentifié et que le chargement est terminé,
   // on retourne null pour laisser useEffect gérer la redirection.
   // Cela évite d'afficher brièvement le formulaire de connexion/inscription.
@@ -58,11 +81,25 @@ export default function HomePage() {
           </p>
         </div>
 
+=======
+  if (isAuthenticated) {
+    return (
+      <main className="h-screen w-screen">
+        <MapView />
+      </main>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+>>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
         {showSignup ? (
           <SignupForm onSwitchToLogin={() => setShowSignup(false)} />
         ) : (
           <LoginForm onSwitchToSignup={() => setShowSignup(true)} />
         )}
+<<<<<<< HEAD
 
         {/* Optionnel: Lien pour basculer manuellement si les formulaires ne l'incluent pas déjà */}
         <div className="text-center text-sm">
@@ -88,6 +125,8 @@ export default function HomePage() {
             </p>
           )}
         </div>
+=======
+>>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
       </div>
     </div>
   );

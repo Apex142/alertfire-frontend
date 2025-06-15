@@ -17,7 +17,11 @@ export interface User {
   lastLogin: Timestamp;
   onboardingStep: number;
   onboardingCompleted: boolean;
+<<<<<<< HEAD
   globalRole: GlobalRole;
+=======
+  globalRole: GlobalRole[];
+>>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
   companies: string[];
   companySelected: string | null;
   preferences: UserPreferences;
