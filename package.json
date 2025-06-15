@@ -1,14 +1,23 @@
 {
+<<<<<<< HEAD
   "name": "alertfire",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+=======
+  "name": "alertfire-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+>>>>>>> 323df62 (Initial commit from Create Next App)
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@capacitor-firebase/authentication": "^7.2.0",
     "@capacitor/android": "^7.3.0",
     "@capacitor/cli": "^7.3.0",
@@ -58,4 +67,21 @@
     "typescript": "^5"
   },
   "packageManager": "yarn@4.4.0+sha512.91d93b445d9284e7ed52931369bc89a663414e5582d00eea45c67ddc459a2582919eece27c412d6ffd1bd0793ff35399381cb229326b961798ce4f4cc60ddfdb"
+=======
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "next": "15.3.3"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.3",
+    "@eslint/eslintrc": "^3"
+  }
+>>>>>>> 323df62 (Initial commit from Create Next App)
 }
