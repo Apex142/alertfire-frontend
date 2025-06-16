@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-<<<<<<< HEAD
+/* ----- Fonts ----- */
 @font-face {
   font-family: "Space Grotesk";
   src: url("/fonts/SpaceGrotesk-VariableFont_wght.ttf") format("truetype");
@@ -11,91 +11,60 @@
   font-display: swap;
 }
 
-@theme {
-  --color-primary: #ff6a00; /* orange feu doux */
-  --color-primary-contrast: #b34700; /* brun orangé */
-  --color-text: #2d1a05; /* brun foncé */
-  --color-surface: #fff8f3; /* blanc chaud */
-  --color-background: #fff3e6; /* beige feu léger */
-  --color-destructive: #e25822; /* orange vif mais pas agressif */
-  --color-success: #ffd580; /* jaune doux */
-  --color-alert: #ffb347; /* orange pastel */
-  --color-subtitle: #bfa27a; /* beige doré */
-  --color-grey-contrast: #f9e8d9; /* gris très clair chaud */
-  --color-border: #ffd6b3; /* beige orangé */
-  --color-ai-variant: #ff6a00;
-  --color-ai-border: #ffe5cc;
+/* ----- Thème clair ultra-moderne ----- */
+:root {
+  --background: #fffaf5; /* fond crème doux */
+  --foreground: #1e1410; /* charbon moderne */
+
+  --color-primary: #ff5722; /* orange brûlé vibrant */
+  --color-primary-contrast: #b33c1a; /* brique intense */
+  --color-text: #1e1410;
+  --color-surface: #fff6ef; /* fond carte chaud */
+  --color-background: #fffaf5;
+  --color-destructive: #e03a3a; /* rouge moderne équilibré */
+  --color-success: #ffe0b3; /* doré discret */
+  --color-alert: #f9965b; /* pêche dynamique */
+  --color-subtitle: #a38978; /* taupe chaud */
+  --color-grey-contrast: #f2e4d8; /* gris rosé haut de gamme */
+  --color-border: #ead2c5; /* beige poudre */
+  --color-ai-variant: #ff5722;
+  --color-ai-border: #fce5d9;
+
   --font-sans: "Space Grotesk", "Inter", sans-serif;
-}
 
-:root {
-  --background: #fff3e6;
-  --foreground: var(--color-text);
-=======
-:root {
-<<<<<<< HEAD
-  --background: #ffffff;
-  --foreground: #171717;
->>>>>>> 323df62 (Initial commit from Create Next App)
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-<<<<<<< HEAD
-    --background: #2d1a05;
-    --foreground: var(--color-surface);
-=======
-    --background: #0a0a0a;
-    --foreground: #ededed;
->>>>>>> 323df62 (Initial commit from Create Next App)
-  }
-=======
-  --background: #fff9f6;
-  --foreground: #1c1c1c;
-  --primary: #e25822;
+  /* Compatibilité shadcn/ui */
+  --primary: var(--color-primary);
   --primary-foreground: #ffffff;
-  --secondary: #ffb347;
-  --muted: #fbeee6;
-  --muted-foreground: #4b3f39;
-  --accent: #c84630;
-  --border: #e5d5c3;
-  --input: #fff4ec;
-  --destructive: #991b1b;
+  --secondary: var(--color-alert);
+  --muted: var(--color-grey-contrast);
+  --muted-foreground: var(--color-subtitle);
+  --accent: var(--color-primary-contrast);
+  --border: var(--color-border);
+  --input: var(--color-surface);
+  --destructive: var(--color-destructive);
   --destructive-foreground: #ffffff;
 }
 
+/* ----- Thème sombre ultra-moderne ----- */
 .dark {
-  --background: #1b1a19;
-  --foreground: #fefaf8;
-  --primary: #ff7847;
-  --primary-foreground: #1c1c1c;
-  --secondary: #ff9933;
-  --muted: #2b2b2b;
-  --muted-foreground: #d1c7be;
-  --accent: #d86148;
-  --border: #3a2f29;
-  --input: #2c2623;
-  --destructive: #ff4c4c;
-  --destructive-foreground: #1b1b1b;
->>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+  --background: #14100e; /* fond charbon mat */
+  --foreground: #f8f3f0; /* blanc cassé doux */
+
+  --primary: #ff6936; /* orange cuivré lumineux */
+  --primary-foreground: #14100e;
+  --secondary: #ff8a4c;
+  --muted: #2a1f1c;
+  --muted-foreground: #c8b4a6;
+  --accent: #e65c3a;
+  --border: #3a2c27;
+  --input: #1e1613;
+  --destructive: #ff5f5f;
+  --destructive-foreground: #1a1a1a;
 }
 
+/* ----- Base globale ----- */
 body {
   background-color: var(--background);
   color: var(--foreground);
-<<<<<<< HEAD
-<<<<<<< HEAD
-  font-family: "Space Grotesk", "Inter", sans-serif;
-=======
-  font-family: Arial, Helvetica, sans-serif;
->>>>>>> 323df62 (Initial commit from Create Next App)
-=======
->>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+  font-family: var(--font-sans);
 }

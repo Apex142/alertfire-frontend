@@ -1,18 +1,5 @@
 "use client";
 
-<<<<<<< HEAD
-import MapView from "@/components/MapView";
-
-export default function DashboardPage() {
-  return (
-    /* prend tout l’écran, la carte remplit l’espace restant */
-    <main className="flex flex-col h-screen w-screen">
-      {/* Carte plein écran */}
-      <div className="flex-1">
-        <MapView />
-      </div>
-    </main>
-=======
 import {
   Activity,
   BarChart2,
@@ -28,7 +15,7 @@ import { useRouter } from "next/navigation";
 import Banner from "@/components/ui/modal/Banner";
 import Dashboard from "./Dashboard";
 
-import Button from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -128,6 +115,5 @@ export default function DashboardPage() {
         </Button>
       </div>
     </Dashboard>
->>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
   );
 }
