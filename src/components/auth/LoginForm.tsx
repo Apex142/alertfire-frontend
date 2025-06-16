@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // src/components/auth/LoginForm.tsx
 "use client";
 
@@ -13,17 +14,23 @@ import {
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext"; // Ajouté
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 "use client";
 
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 import { notify } from "@/lib/notify";
 import { authService } from "@/services/AuthService";
 import { AuthProviderType } from "@/types/enums/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
+<<<<<<< HEAD
 <<<<<<< HEAD
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -31,11 +38,16 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+import { motion } from "framer-motion";
+import Image from "next/image";
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const loginSchema = z.object({
+<<<<<<< HEAD
 <<<<<<< HEAD
   email: z.string().email("L'adresse email est invalide."),
   password: z
@@ -71,6 +83,8 @@ interface LoginFormProps {
 export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const [error, setError] = useState<string>("");
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   email: z.string().email("Adresse e-mail invalide"),
   password: z.string().min(6, "6 caractères minimum"),
 });
@@ -95,11 +109,15 @@ interface Props {
 
 export default function LoginForm({ onSwitchToSignup }: Props) {
   const [error, setError] = useState("");
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+<<<<<<< HEAD
 <<<<<<< HEAD
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -112,6 +130,8 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
       setError("");
       // Récupère la session renvoyée par le service
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
   const { setSessionDetails } = useAuth();
@@ -120,11 +140,15 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError("");
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
       const { appUser, session } = await authService.signInUser(
         data.email,
         data.password
       );
+<<<<<<< HEAD
 <<<<<<< HEAD
       setSessionDetails(appUser, session); // SYNCHRONISE le contexte
       notify.success("Connexion réussie ! Redirection...");
@@ -276,6 +300,8 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
       </CardContent>
     </Card>
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
       setSessionDetails(appUser, session);
       notify.success("Connexion réussie !");
     } catch (err) {
@@ -421,6 +447,9 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
         </p>
       )}
     </motion.div>
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   );
 }

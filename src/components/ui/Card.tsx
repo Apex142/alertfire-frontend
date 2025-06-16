@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { HTMLAttributes, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -69,6 +70,8 @@ CardFooter.displayName = 'CardFooter';
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }; 
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 "use client";
 
 import clsx from "clsx";
@@ -132,4 +135,7 @@ export const Card: React.FC<CardProps> = ({
     </motion.div>
   );
 };
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4

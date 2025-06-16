@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # 🔥 AlertFire – Système intelligent de détection et de gestion d'incendies
 
 **AlertFire** est une plateforme web et embarquée dédiée à la **détection rapide des départs de feu en milieu naturel** et à la **coordination des interventions**.
@@ -59,6 +60,8 @@ Détecter et **signaler automatiquement un départ de feu en moins de 3 secondes
 Projet développé par **Mehdi Martin** et l’équipe AlertFire – Université Aix-Marseille  
 Licence 3 Informatique – Projet Système Distribué & IA embarquée
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -95,4 +98,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<<<<<<< HEAD
 >>>>>>> 323df62 (Initial commit from Create Next App)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4

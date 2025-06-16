@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // hooks/useProjects.ts
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase/client";
@@ -66,6 +67,8 @@ export function useProjects() {
   const currentUser = appUser || firebaseUser;
 
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 import { ProjectService } from "@/services/ProjectService";
 import { Project } from "@/types/entities/Project";
 import { useCallback, useEffect, useState } from "react";
@@ -75,11 +78,15 @@ const sortByName = (a: Project, b: Project) =>
   (a.name ?? "").localeCompare(b.name ?? "");
 
 export function useProjects() {
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   const fetchProjectsForUser = useCallback(async (userId: string) => {
     if (!userId) {
@@ -233,6 +240,8 @@ export function useProjects() {
 
   return { projects, loading, error, refreshProjects };
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   /* --- fetch manuel --- */
   const fetchProjects = useCallback(async () => {
     try {
@@ -266,5 +275,8 @@ export function useProjects() {
   }, []);
 
   return { projects, loading, error, refresh: fetchProjects };
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 }

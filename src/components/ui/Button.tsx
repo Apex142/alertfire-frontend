@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -33,6 +34,8 @@ export const Button = React.forwardRef(
 
     // Continue ta logique de variant/size ici...
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 // src/components/ui/button.tsx
 "use client";
 
@@ -114,11 +117,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const isDisabled = disabled || loading;
 
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
     return (
       <button
         ref={ref}
         className={cn(
+<<<<<<< HEAD
 <<<<<<< HEAD
           // ...ton système
           "inline-flex items-center gap-2 justify-center rounded-md border transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-2",
@@ -136,6 +143,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {IconLeft && <IconLeft className="w-4 h-4" />}
         {children}
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
           // base
           "inline-flex items-center justify-center font-medium transition focus:outline-none",
           // désactivation
@@ -171,7 +180,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {endIcon}
           </span>
         )}
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
       </button>
     );
   }
@@ -179,7 +191,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
 Button.displayName = "Button";
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 export default Button;
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+
+export default Button;
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4

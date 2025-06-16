@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 @font-face {
   font-family: "Space Grotesk";
   src: url("/fonts/SpaceGrotesk-VariableFont_wght.ttf") format("truetype");
@@ -57,6 +58,9 @@
 >>>>>>> 323df62 (Initial commit from Create Next App)
   }
 =======
+=======
+:root {
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   --background: #fff9f6;
   --foreground: #1c1c1c;
   --primary: #e25822;
@@ -84,12 +88,16 @@
   --input: #2c2623;
   --destructive: #ff4c4c;
   --destructive-foreground: #1b1b1b;
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
   font-family: "Space Grotesk", "Inter", sans-serif;
@@ -98,4 +106,6 @@ body {
 >>>>>>> 323df62 (Initial commit from Create Next App)
 =======
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 }

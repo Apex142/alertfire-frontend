@@ -1,6 +1,7 @@
 "use client";
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import MapView from "@/components/MapView";
 
 export default function DashboardPage() {
@@ -13,6 +14,8 @@ export default function DashboardPage() {
       </div>
     </main>
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 import {
   Activity,
   BarChart2,
@@ -128,6 +131,9 @@ export default function DashboardPage() {
         </Button>
       </div>
     </Dashboard>
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   );
 }

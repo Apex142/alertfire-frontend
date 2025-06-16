@@ -4,17 +4,23 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import {
   Bell,
   LayoutDashboard,
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Flame,
   LayoutDashboard,
   Loader2,
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   LogIn,
   LogOut,
   MapPin,
@@ -31,9 +37,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import NotificationButton from "./NotificationButton";
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+import NotificationButton from "./NotificationButton";
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 
 export default function Navbar() {
   const { appUser, logout, currentSessionId, loading: authLoading } = useAuth();
@@ -41,6 +51,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+<<<<<<< HEAD
 <<<<<<< HEAD
   const { theme, setTheme, resolvedTheme } = useTheme();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -56,6 +67,8 @@ export default function Navbar() {
         menuRef.current &&
         !menuRef.current.contains(event.target as Node)
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   const { setTheme, resolvedTheme } = useTheme();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -70,11 +83,15 @@ export default function Navbar() {
         menuOpen &&
         menuRef.current &&
         !menuRef.current.contains(e.target as Node)
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
       ) {
         setMenuOpen(false);
       }
     };
+<<<<<<< HEAD
 <<<<<<< HEAD
     if (menuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
@@ -112,6 +129,8 @@ export default function Navbar() {
         <div className="ml-auto flex items-center gap-3">
           <button onClick={toggleTheme} aria-label="Toggle Theme">
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
     if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
@@ -166,7 +185,10 @@ export default function Navbar() {
             className="p-2 rounded-lg hover:bg-accent transition-colors"
             aria-label="Changer de thème"
           >
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
             {resolvedTheme === "dark" ? (
               <Sun className="w-5 h-5" />
             ) : (
@@ -175,6 +197,7 @@ export default function Navbar() {
           </button>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
           {!appUser ? (
             <button
               onClick={() => router.push("/login")}
@@ -182,6 +205,8 @@ export default function Navbar() {
             >
               <LogIn className="w-4 h-4 inline mr-1" /> Connexion
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
           {/* Auth loading / avatar / login */}
           {authLoading ? (
             <div className="w-8 h-8 flex items-center justify-center">
@@ -193,17 +218,24 @@ export default function Navbar() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90"
             >
               <LogIn className="w-4 h-4" /> Connexion
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
             </button>
           ) : (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
 <<<<<<< HEAD
+<<<<<<< HEAD
                 className="flex items-center gap-2 focus:outline-none"
 =======
                 className="flex items-center gap-2"
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+                className="flex items-center gap-2"
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
               >
                 {appUser.photoURL ? (
                   <Image
@@ -221,11 +253,14 @@ export default function Navbar() {
 
               {menuOpen && (
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded shadow-md py-2 z-[9999]">
                   <Link
                     href="/profile"
                     className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -235,7 +270,10 @@ export default function Navbar() {
                   <Link
                     href="/profile"
                     className="block px-4 py-2 hover:bg-accent hover:text-background"
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
                     onClick={() => setMenuOpen(false)}
                   >
                     <User className="w-4 h-4 inline mr-2" /> Profil
@@ -243,10 +281,14 @@ export default function Navbar() {
                   <Link
                     href="/settings"
 <<<<<<< HEAD
+<<<<<<< HEAD
                     className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
 =======
                     className="block px-4 py-2 hover:bg-accent hover:text-background"
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+                    className="block px-4 py-2 hover:bg-accent hover:text-background"
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
                     onClick={() => setMenuOpen(false)}
                   >
                     <Settings className="w-4 h-4 inline mr-2" /> Paramètres
@@ -258,24 +300,31 @@ export default function Navbar() {
                       router.push("/");
                     }}
 <<<<<<< HEAD
+<<<<<<< HEAD
                     className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-700/20"
                   >
                     <LogOut className="w-4 h-4 inline mr-2" /> Déconnexion
                   </button>
                 </div>
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
                     className="w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
                   >
                     <LogOut className="w-4 h-4 inline mr-2" /> Déconnexion
                   </button>
                 </motion.div>
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
               )}
             </div>
           )}
         </div>
       </nav>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
       {appUser && (
         <div className="fixed bottom-0 w-full flex justify-around bg-white dark:bg-gray-900 border-t dark:border-gray-700 py-2 z-[9999] md:hidden">
@@ -322,6 +371,8 @@ export default function Navbar() {
             <span className="text-xs">Profil</span>
           </Link>
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
       {/* NAVIGATION (mobile) */}
       {appUser && (
         <div className="fixed bottom-0 w-full flex justify-around bg-background border-t border-border py-2 z-[99999] md:hidden text-foreground">
@@ -355,14 +406,20 @@ export default function Navbar() {
             icon={<User className="w-5 h-5" />}
             active={isActive("/profile")}
           />
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
         </div>
       )}
     </>
   );
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 
 /* ---------- Composants internes ---------- */
 
@@ -412,4 +469,7 @@ function MobileLink({
     </Link>
   );
 }
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4

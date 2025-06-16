@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // android/build.gradle
 
 buildscript {
@@ -8,15 +9,21 @@ buildscript {
     }
 
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
     
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
     repositories {
         google()
         mavenCentral()
     }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
     dependencies {
@@ -28,6 +35,8 @@ buildscript {
 
 // On applique les autres variables pour le reste du projet (le module :app, etc.)
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
     dependencies {
         classpath 'com.android.tools.build:gradle:8.7.2'
         classpath 'com.google.gms:google-services:4.4.2'
@@ -37,7 +46,10 @@ buildscript {
     }
 }
 
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 apply from: "variables.gradle"
 
 allprojects {
@@ -50,7 +62,11 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
 =======
 }
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+}
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // src/app/page.tsx (ou le chemin vers votre page d'accueil/login)
 "use client";
 
@@ -32,6 +33,8 @@ export default function HomePage() {
       <div className="flex min-h-screen items-center justify-center bg-background dark:bg-gray-900">
         {/* Assurez-vous que bg-background est défini dans votre Tailwind config ou global.css */}
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 "use client";
 
 import "leaflet/dist/leaflet.css";
@@ -51,12 +54,16 @@ export default function HomePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background dark:bg-gray-900">
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
         <Loading message="Chargement..." size="lg" />
       </div>
     );
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   // Si l'utilisateur est authentifié et que le chargement est terminé,
   // on retourne null pour laisser useEffect gérer la redirection.
@@ -82,6 +89,8 @@ export default function HomePage() {
         </div>
 
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   if (isAuthenticated) {
     return (
       <main className="h-screen w-screen">
@@ -93,12 +102,16 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background dark:bg-gray-900 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
         {showSignup ? (
           <SignupForm onSwitchToLogin={() => setShowSignup(false)} />
         ) : (
           <LoginForm onSwitchToSignup={() => setShowSignup(true)} />
         )}
+<<<<<<< HEAD
 <<<<<<< HEAD
 
         {/* Optionnel: Lien pour basculer manuellement si les formulaires ne l'incluent pas déjà */}
@@ -127,6 +140,8 @@ export default function HomePage() {
         </div>
 =======
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
       </div>
     </div>
   );

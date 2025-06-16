@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
@@ -37,13 +38,18 @@ const config: CapacitorConfig = {
     },
   },
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.apex.alertfire',
   appName: 'alertfire',
   webDir: 'public'
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 };
 
 export default config;

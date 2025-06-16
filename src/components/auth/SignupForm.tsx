@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // src/components/auth/SignupForm.tsx
 "use client";
 
@@ -18,6 +19,8 @@ import { AuthProviderType } from "@/types/enums/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 "use client";
 
 import { Input } from "@/components/ui/Input";
@@ -29,12 +32,16 @@ import { AuthProviderType } from "@/types/enums/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
 import { motion } from "framer-motion";
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 import Image from "next/image";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 // Schéma Zod pour l'inscription
 // Pour l'instant, nous ne collectons que email et mot de passe.
@@ -53,6 +60,8 @@ const signupSchema = z
     message: "Les mots de passe ne correspondent pas.",
     path: ["confirmPassword"], // Erreur associée au champ confirmPassword
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 const signupSchema = z
   .object({
     email: z.string().email("Email invalide"),
@@ -62,11 +71,15 @@ const signupSchema = z
   .refine((d) => d.password === d.confirmPassword, {
     path: ["confirmPassword"],
     message: "Les mots de passe ne correspondent pas",
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   });
 
 type SignupFormData = z.infer<typeof signupSchema>;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 // Fonction pour traduire les erreurs Firebase en messages utilisateurs
 const getFirebaseErrorMessage = (error: FirebaseError): string => {
@@ -97,6 +110,8 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const { setSessionDetails } = useAuth(); // Obtenir setSessionDetails du contexte
   const [error, setError] = useState<string>("");
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 const firebaseMessage = (err: FirebaseError | unknown) =>
   err instanceof FirebaseError && err.code === "auth/email-already-in-use"
     ? "Email déjà utilisé"
@@ -109,7 +124,10 @@ interface Props {
 export default function SignupForm({ onSwitchToLogin }: Props) {
   const { setSessionDetails } = useAuth();
   const [submitError, setSubmitError] = useState("");
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
 
   const {
     register,
@@ -120,6 +138,7 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
   });
 
   const onSubmit = async (data: SignupFormData) => {
+<<<<<<< HEAD
 <<<<<<< HEAD
     try {
       setError("");
@@ -310,6 +329,8 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
       </CardContent>
     </Card>
 =======
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
     setSubmitError("");
     try {
       const { appUser, session } = await authService.signUpUser(
@@ -449,6 +470,9 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
         </p>
       )}
     </motion.div>
+<<<<<<< HEAD
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   );
 }

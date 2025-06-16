@@ -18,10 +18,14 @@ export interface User {
   onboardingStep: number;
   onboardingCompleted: boolean;
 <<<<<<< HEAD
+<<<<<<< HEAD
   globalRole: GlobalRole;
 =======
   globalRole: GlobalRole[];
 >>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
+=======
+  globalRole: GlobalRole[];
+>>>>>>> 5162f9988e78ee543b5f4b76cc6f52b0608733b4
   companies: string[];
   companySelected: string | null;
   preferences: UserPreferences;
