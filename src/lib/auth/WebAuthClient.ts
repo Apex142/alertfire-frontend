@@ -1,29 +1,41 @@
-// pkg/lib/auth/WebAuthClient.ts
+// src/lib/auth/WebAuthClient.ts
 import {
+  signOut as firebaseSignOut,
   getAuth,
   onAuthStateChanged,
-  signOut as webSignOut,
+  User as WebUser,
 } from "firebase/auth";
-import { app } from "../firebase/client";
+
 import { AnyFirebaseUser, IAuthClient } from "./IAuthClient";
 
 export class WebAuthClient implements IAuthClient {
-  private auth = getAuth(app);
+  /** Instance Auth liée à l’app Firebase déjà initialisée (voir client.ts) */
+  private auth = getAuth();
 
-  addAuthListener(cb: (u: AnyFirebaseUser) => void) {
-    return onAuthStateChanged(this.auth, cb);
+  /** Cache local de l’utilisateur courant */
+  private _currentUser: WebUser | null = this.auth.currentUser ?? null;
+
+  /** Enregistre un listener et renvoie la fonction de désinscription */
+  addAuthListener(cb: (u: AnyFirebaseUser) => void): () => void {
+    return onAuthStateChanged(this.auth, (user) => {
+      this._currentUser = user;
+      cb(user ?? null);
+    });
   }
 
-  async signOut() {
-    await webSignOut(this.auth);
+  /** Déconnexion Web */
+  async signOut(): Promise<void> {
+    await firebaseSignOut(this.auth);
+    this._currentUser = null;
   }
 
-  async getIdToken() {
-    const u = this.auth.currentUser;
-    return u ? u.getIdToken() : null;
+  /** Récupère le JWT Firebase (null si non connecté) */
+  async getIdToken(): Promise<string | null> {
+    return this._currentUser ? this._currentUser.getIdToken() : null;
   }
 
-  currentUser() {
-    return this.auth.currentUser;
+  /** Utilisateur courant (synchrone) */
+  currentUser(): AnyFirebaseUser {
+    return this._currentUser;
   }
 }

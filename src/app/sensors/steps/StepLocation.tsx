@@ -58,7 +58,7 @@ export default function StepLocation({
     >
       <div className="relative">
         <MapContainer
-          center={center as any}
+          center={center as [number, number]}
           zoom={13}
           className="h-64 rounded-xl border border-border shadow-sm"
           scrollWheelZoom
@@ -69,7 +69,7 @@ export default function StepLocation({
           />
           {data.latitude && (
             <Marker
-              position={[data.latitude, data.longitude!] as any}
+              position={[data.latitude, data.longitude!] as [number, number]}
               icon={customIcon}
             />
           )}

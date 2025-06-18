@@ -50,8 +50,9 @@ export default function MapView() {
   }, [geoProjects, propagations, fires]);
 
   const { links, circles } = useMemo(() => {
-    const ln: { origin: any; target: any }[] = [];
-    const cir: { center: any; radiusM: number }[] = [];
+    type Project = (typeof geoProjects)[number];
+    const ln: { origin: Project; target: Project }[] = [];
+    const cir: { center: Project; radiusM: number }[] = [];
 
     fires.forEach((o) => {
       (propagations[o.id] ?? [])
@@ -85,7 +86,7 @@ export default function MapView() {
         zoom={14}
         scrollWheelZoom
         className="h-full w-full"
-        whenCreated={(m) => (mapRef.current = m)}
+        ref={mapRef}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

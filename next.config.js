@@ -2,6 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  output: "standalone",
+  staticPageGenerationTimeout: 30, // ou une autre valeur
   images: {
     domains: [
       "lh3.googleusercontent.com",

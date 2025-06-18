@@ -12,6 +12,7 @@ import { InfoCard } from "@/components/ui/InfoCard";
 import { ListBlock } from "@/components/ui/ListBlock";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectService } from "@/services/ProjectService";
+import { ProjectStatus } from "@/types/enums/ProjectStatus";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -40,8 +41,7 @@ export default function SensorDetailsPage() {
   const resolveFire = async () => {
     if (!project) return;
     try {
-      setSaving(true);
-      await ProjectService.update(project.id, { status: "ok" });
+      await ProjectService.update(project.id, { status: ProjectStatus.OK });
       setOpen(false);
     } finally {
       setSaving(false);

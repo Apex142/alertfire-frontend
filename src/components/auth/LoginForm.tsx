@@ -1,19 +1,24 @@
 "use client";
 
-import { Input } from "@/components/ui/Input";
-import { useAuth } from "@/contexts/AuthContext";
-import { notify } from "@/lib/notify";
-import { authService } from "@/services/AuthService";
-import { AuthProviderType } from "@/types/enums/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "../ui/Button";
 
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { useAuth } from "@/contexts/AuthContext";
+import { notify } from "@/lib/notify";
+import type { AuthService } from "@/services/AuthService"; // pour le typage
+import { createAuthService } from "@/services/AuthService"; // ✅ factory
+import { AuthProviderType } from "@/types/enums/AuthProvider";
+
+/* -------------------------------------------------------------------------- */
+/* 1. Validation Zod + types                                                  */
+/* -------------------------------------------------------------------------- */
 const loginSchema = z.object({
   email: z.string().email("Adresse e-mail invalide"),
   password: z.string().min(6, "6 caractères minimum"),
@@ -37,8 +42,14 @@ interface Props {
   onSwitchToSignup?: () => void;
 }
 
+/* -------------------------------------------------------------------------- */
+/* 2. Composant                                                               */
+/* -------------------------------------------------------------------------- */
 export default function LoginForm({ onSwitchToSignup }: Props) {
+  /* ----- state & hooks ----- */
   const [error, setError] = useState("");
+  const [authService, setAuthService] = useState<AuthService | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -47,8 +58,16 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
 
   const { setSessionDetails } = useAuth();
 
-  /* ----- submit ----- */
+  /* ----- charge AuthService une seule fois (client only) ----- */
+  useEffect(() => {
+    createAuthService().then(setAuthService);
+  }, []);
+
+  /* -------------------------------------------------------------------- */
+  /* 3. Handlers                                                          */
+  /* -------------------------------------------------------------------- */
   const onSubmit = async (data: LoginFormData) => {
+    if (!authService) return; // sécurité (ne devrait pas arriver)
     try {
       setError("");
       const { appUser, session } = await authService.signInUser(
@@ -68,8 +87,8 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
     }
   };
 
-  /* ----- Google signin ----- */
   const signInGoogle = async () => {
+    if (!authService) return;
     try {
       setError("");
       const { appUser, session } = await authService.signInWithProvider(
@@ -78,19 +97,20 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
       setSessionDetails(appUser, session);
       notify.success("Connecté avec Google !");
     } catch (err) {
-      if (err instanceof FirebaseError) {
-        if (
-          [
-            "auth/popup-closed-by-user",
-            "auth/cancelled-popup-request",
-          ].includes(err.code)
+      if (
+        err instanceof FirebaseError &&
+        !["auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(
+          err.code
         )
-          return; // annulation => silencieux
+      ) {
         setError(firebaseMessage(err));
       }
     }
   };
 
+  /* -------------------------------------------------------------------- */
+  /* 4. Rendu                                                             */
+  /* -------------------------------------------------------------------- */
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -98,7 +118,7 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
       transition={{ duration: 0.25 }}
       className="w-full max-w-md rounded-xl bg-card p-6 shadow-lg dark:bg-gray-800/70"
     >
-      {/* Header */}
+      {/* Header -------------------------------------------------------- */}
       <div className="mb-6 text-center space-y-2">
         <Image
           src="/images/AlertFire.png"
@@ -114,7 +134,7 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
         </p>
       </div>
 
-      {/* Form */}
+      {/* Form ---------------------------------------------------------- */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="Adresse e-mail"
@@ -145,26 +165,26 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
           disabled={isSubmitting}
           variant="primary"
         >
-          {isSubmitting ? "Connexion..." : "Se connecter"}
+          {isSubmitting ? "Connexion…" : "Se connecter"}
         </Button>
       </form>
 
-      {/* Divider */}
+      {/* Divider ------------------------------------------------------- */}
       <div className="my-6 flex items-center">
         <span className="flex-grow border-t border-border" />
         <span className="mx-3 text-xs text-muted-foreground">ou</span>
         <span className="flex-grow border-t border-border" />
       </div>
 
-      {/* Google Button */}
+      {/* Google Button -------------------------------------------------- */}
       <Button
         variant="secondary"
         className="w-full gap-2"
         onClick={signInGoogle}
-        disabled={isSubmitting}
+        disabled={isSubmitting || !authService}
       >
-        {/* simple svg icône G  */}
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
+          {/* Icône G simplifiée */}
           <path
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
             fill="#4285F4"
@@ -185,12 +205,12 @@ export default function LoginForm({ onSwitchToSignup }: Props) {
         Google
       </Button>
 
-      {/* Switch link */}
+      {/* Switch link ---------------------------------------------------- */}
       {onSwitchToSignup && (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Pas encore de compte&nbsp;?{" "}
           <Button
-            variant="link"
+            variant="primary"
             size="sm"
             onClick={onSwitchToSignup}
             disabled={isSubmitting}

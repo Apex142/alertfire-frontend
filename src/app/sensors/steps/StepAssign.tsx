@@ -1,6 +1,6 @@
 "use client";
 
-import Button from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFirefighters } from "@/hooks/useFirefighters";
 import { useProjectWizard } from "@/hooks/useProjectWizard";
@@ -69,7 +69,7 @@ export default function StepAssign({
     const list = data[field].includes(id)
       ? data[field].filter((i) => i !== id)
       : [...data[field], id];
-    update({ [field]: list } as any);
+    update({ [field]: list } as Partial<typeof data>);
   };
 
   return (

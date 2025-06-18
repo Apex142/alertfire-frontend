@@ -1,11 +1,13 @@
 "use client";
 
-import { AnyFirebaseUser, authClient } from "@/lib/auth/AuthClientFactory";
+import { createAuthClient } from "@/lib/auth/AuthClientFactory";
+import { AnyFirebaseUser } from "@/lib/auth/IAuthClient";
 import { db } from "@/lib/firebase/client";
-import { authService } from "@/services/AuthService";
+import { createAuthService } from "@/services/AuthService"; // version dynamique ici !
 import { sessionService } from "@/services/SessionService";
-import { Session } from "@/types/entities/Session";
-import { User as AppUser } from "@/types/entities/User";
+import type { Session } from "@/types/entities/Session";
+import type { User as AppUser } from "@/types/entities/User";
+
 import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import {
   createContext,
@@ -47,6 +49,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const userDocListenerUnsubscribeRef = useRef<Unsubscribe | null>(null);
   const sessionDocListenerUnsubscribeRef = useRef<Unsubscribe | null>(null);
+  const authServiceRef = useRef<Awaited<
+    ReturnType<typeof createAuthService>
+  > | null>(null);
+
+  /* Chargement dynamique de authService */
+  useEffect(() => {
+    createAuthService().then((service) => {
+      authServiceRef.current = service;
+    });
+  }, []);
 
   useEffect(() => {
     const id = localStorage.getItem(SESSION_ID_STORAGE_KEY);
@@ -74,8 +86,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     async (reason?: string, forceSessionId?: string | null) => {
       setLoading(true);
       clearListeners();
-
+      const authService = authServiceRef.current;
       const sessionId = forceSessionId ?? currentSessionIdRef.current;
+
       try {
         if (reason?.includes("expired") || reason?.includes("revoked")) {
           toast.warning("Votre session a expiré ou a été révoquée.");
@@ -89,7 +102,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await fetch(`/api/session/${sessionId}/delete`, { method: "POST" });
         }
 
-        await authService.signOutUser(sessionId);
+        if (authService) {
+          await authService.signOutUser(sessionId ?? undefined);
+        }
+
         await fetch("/api/auth/session", {
           method: "POST",
           body: JSON.stringify({ action: "logout" }),
@@ -103,94 +119,104 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (e) {
         console.error("performLogout error:", e);
       }
+
       setLoading(false);
     },
     [clearListeners]
   );
 
   useEffect(() => {
-    const unsubscribe = authClient.addAuthListener(async (user) => {
-      setLoading(true);
-      clearListeners();
+    let unsubscribe: (() => void) | undefined;
 
-      if (!user) {
-        setFirebaseUser(null);
-        setAppUser(null);
-        setCurrentSessionId(null);
-        currentSessionIdRef.current = null;
-        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-        await fetch("/api/auth/session", {
-          method: "POST",
-          body: JSON.stringify({ action: "logout" }),
-        }).catch(() => {});
-        setLoading(false);
-        return;
-      }
+    createAuthClient().then((authClient) => {
+      if (!authClient) return;
 
-      setFirebaseUser(user);
+      unsubscribe = authClient.addAuthListener(async (user) => {
+        setLoading(true);
+        clearListeners();
 
-      try {
-        let appUser = await authService.getAppUserProfile(user.uid);
-        if (!appUser) {
-          appUser = await authService.createDefaultProfile(user);
-          toast.success("Profil utilisateur créé automatiquement.");
-        }
-
-        if (appUser.isBanned) {
-          await performLogout("User is banned");
+        if (!user) {
+          setFirebaseUser(null);
+          setAppUser(null);
+          setCurrentSessionId(null);
+          currentSessionIdRef.current = null;
+          localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+          await fetch("/api/auth/session", {
+            method: "POST",
+            body: JSON.stringify({ action: "logout" }),
+          }).catch(() => {});
+          setLoading(false);
           return;
         }
 
-        setAppUser(appUser);
+        setFirebaseUser(user);
 
-        const sessions = await sessionService.getUserSessions(user.uid);
-        const active =
-          sessions
-            ?.filter((s) => !s.revoked)
-            .sort(
-              (a, b) =>
-                (b.createdAt?.toMillis?.() ?? 0) -
-                (a.createdAt?.toMillis?.() ?? 0)
-            )[0] ?? null;
+        try {
+          const authService = authServiceRef.current;
+          if (!authService) return;
 
-        setSessionDetailsAction(appUser, active);
-
-        userDocListenerUnsubscribeRef.current = onSnapshot(
-          doc(db, "users", user.uid),
-          async (snapshot) => {
-            if (!snapshot.exists()) {
-              await performLogout("User document deleted from Firestore");
-              return;
-            }
-            const updated = snapshot.data() as AppUser;
-            setAppUser(updated);
-            if (updated.isBanned) {
-              await performLogout("User dynamically banned");
-            }
-          },
-          async () => {
-            await performLogout("Error listening to user document");
+          let appUser = await authService.getAppUserProfile(user.uid);
+          if (!appUser) {
+            appUser = await authService.createDefaultProfile(user);
+            toast.success("Profil utilisateur créé automatiquement.");
           }
-        );
 
-        const token = await authClient.getIdToken();
-        if (token) {
-          await fetch("/api/auth/session", {
-            method: "POST",
-            body: JSON.stringify({ action: "login", token }),
-          }).catch(() => {});
+          if (appUser.isBanned) {
+            await performLogout("User is banned");
+            return;
+          }
+
+          setAppUser(appUser);
+
+          const sessions = await sessionService.getUserSessions(user.uid);
+          const active =
+            sessions
+              ?.filter((s) => !s.revoked)
+              .sort(
+                (a, b) =>
+                  (b.createdAt?.toMillis?.() ?? 0) -
+                  (a.createdAt?.toMillis?.() ?? 0)
+              )[0] ?? null;
+
+          setSessionDetailsAction(appUser, active);
+
+          userDocListenerUnsubscribeRef.current = onSnapshot(
+            doc(db, "users", user.uid),
+            async (snapshot) => {
+              if (!snapshot.exists()) {
+                await performLogout("User document deleted from Firestore");
+                return;
+              }
+              const updated = snapshot.data() as AppUser;
+              setAppUser(updated);
+              if (updated.isBanned) {
+                await performLogout("User dynamically banned");
+              }
+            },
+            async () => {
+              await performLogout("Error listening to user document");
+            }
+          );
+
+          const token = await authClient.getIdToken();
+          if (token) {
+            await fetch("/api/auth/session", {
+              method: "POST",
+              body: JSON.stringify({ action: "login", token }),
+            }).catch(() => {});
+          }
+        } catch (err) {
+          console.error("Auth init error:", err);
+          toast.error("Erreur lors de l'initialisation de la session.");
+          await performLogout("Auth init error");
         }
-      } catch (err) {
-        console.error("Auth init error:", err);
-        toast.error("Erreur lors de l'initialisation de la session.");
-        await performLogout("Auth init error");
-      }
 
-      setLoading(false);
+        setLoading(false);
+      });
     });
 
     return () => {
-      unsubscribe();
+      unsubscribe?.();
       clearListeners();
     };
   }, [performLogout, clearListeners]);

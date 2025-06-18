@@ -2,7 +2,6 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications } from "@/hooks/useNotifications";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -27,8 +26,7 @@ import { useEffect, useRef, useState } from "react";
 import NotificationButton from "./NotificationButton";
 
 export default function Navbar() {
-  const { appUser, logout, currentSessionId, loading: authLoading } = useAuth();
-  const { unreadCount } = useNotifications();
+  const { appUser, logout, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -169,7 +167,7 @@ export default function Navbar() {
                   <button
                     onClick={async () => {
                       setMenuOpen(false);
-                      await logout("Manual logout", currentSessionId);
+                      await logout("Manual logout");
                       router.push("/");
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"

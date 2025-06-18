@@ -1,19 +1,22 @@
 "use client";
 
-import { Input } from "@/components/ui/Input";
-import { useAuth } from "@/contexts/AuthContext";
-import { notify } from "@/lib/notify";
-import { authService } from "@/services/AuthService";
-import { AuthProviderType } from "@/types/enums/AuthProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "../ui/Button";
 
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { useAuth } from "@/contexts/AuthContext";
+import { notify } from "@/lib/notify";
+import type { AuthService } from "@/services/AuthService";
+import { createAuthService } from "@/services/AuthService";
+import { AuthProviderType } from "@/types/enums/AuthProvider";
+
+/* -------------------- Schéma Zod -------------------- */
 const signupSchema = z
   .object({
     email: z.string().email("Email invalide"),
@@ -36,9 +39,11 @@ interface Props {
   onSwitchToLogin?: () => void;
 }
 
+/* -------------------- Composant principal -------------------- */
 export default function SignupForm({ onSwitchToLogin }: Props) {
   const { setSessionDetails } = useAuth();
   const [submitError, setSubmitError] = useState("");
+  const [authService, setAuthService] = useState<AuthService | null>(null);
 
   const {
     register,
@@ -48,9 +53,15 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
     resolver: zodResolver(signupSchema),
   });
 
+  useEffect(() => {
+    createAuthService().then(setAuthService);
+  }, []);
+
   const onSubmit = async (data: SignupFormData) => {
     setSubmitError("");
     try {
+      if (!authService) return;
+
       const { appUser, session } = await authService.signUpUser(
         data.email,
         data.password
@@ -67,6 +78,8 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
   const signInGoogle = async () => {
     try {
       setSubmitError("");
+      if (!authService) return;
+
       const { appUser, session } = await authService.signInWithProvider(
         AuthProviderType.GOOGLE
       );
@@ -86,7 +99,6 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
       transition={{ duration: 0.25 }}
       className="w-full max-w-md rounded-xl bg-card p-6 shadow-lg dark:bg-gray-800/70"
     >
-      {/* Header */}
       <div className="mb-6 text-center space-y-2">
         <Image
           src="/images/AlertFire.png"
@@ -102,7 +114,6 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
         </p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="Adresse e-mail"
@@ -138,14 +149,12 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
         </Button>
       </form>
 
-      {/* Divider */}
       <div className="my-6 flex items-center">
         <span className="flex-grow border-t border-border" />
         <span className="mx-3 text-xs text-muted-foreground">ou</span>
         <span className="flex-grow border-t border-border" />
       </div>
 
-      {/* Google Button */}
       <Button
         variant="secondary"
         className="w-full gap-2"
@@ -173,12 +182,11 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
         Google
       </Button>
 
-      {/* Switch link */}
       {onSwitchToLogin && (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Déjà un compte&nbsp;?{" "}
           <Button
-            variant="link"
+            variant="primary"
             size="sm"
             onClick={onSwitchToLogin}
             disabled={isSubmitting}

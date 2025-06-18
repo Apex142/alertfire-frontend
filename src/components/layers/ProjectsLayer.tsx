@@ -11,7 +11,7 @@ const COLORS = { master: "#3b82f6", node: "#22c55e", fire: "#ef4444" };
 type Props = {
   projects: Project[];
   activeProjectIds: Set<string>;
-  propagations: Record<string, any[]>;
+  propagations: Record<string, unknown[]>;
 };
 
 export const ProjectsLayer = ({

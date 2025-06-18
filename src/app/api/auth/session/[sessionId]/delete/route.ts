@@ -5,7 +5,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
-  const { sessionId } = params;
+  const sessionId = params.sessionId;
 
   // Récupérer la session pour obtenir l'UID de l'utilisateur concerné
   const sessionSnap = await adminDb.doc(`sessions/${sessionId}`).get();

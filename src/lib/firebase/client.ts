@@ -1,41 +1,54 @@
 // src/lib/firebase/client.ts
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+import { Capacitor } from "@capacitor/core";
+
 import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
-import { Auth, getAuth } from "firebase/auth";
+import {
+  Auth,
+  getAuth, // Web-only
+} from "firebase/auth";
 import { Firestore, getFirestore } from "firebase/firestore";
 import { FirebaseStorage, getStorage } from "firebase/storage";
+
 import { firebaseConfig } from "./config";
 
+/* -------------------------------------------------------------------------- */
+/* 1. Initialisation unique de l’App                                          */
+/* -------------------------------------------------------------------------- */
 let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
 
-if (typeof window !== "undefined" && !getApps().length) {
-  // Nous sommes côté client et Firebase n'a pas encore été initialisé.
+if (!getApps().length) {
+  // Première initialisation (client web, mobile natif ou tests)
   app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} else if (getApps().length > 0) {
-  // Firebase a déjà été initialisé (peut arriver avec HMR ou si ce module est importé plusieurs fois)
-  app = getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
 } else {
-  // Nous sommes potentiellement côté serveur et aucune app n'est initialisée.
-  // Cela ne devrait pas arriver pour le client SDK, mais par sécurité :
-  // Initialiser une app par défaut si firebaseConfig est disponible.
-  // Cependant, ce module est destiné au client.
-  // Pour le SSR/Server Components, privilégiez `admin.ts`.
-  // Si vous avez besoin d'une instance client sur le serveur dans des cas très spécifiques (non admin),
-  // il faudrait une logique plus robuste ici, mais c'est rare.
-  // On initialise quand même pour éviter des erreurs si ce module est importé par erreur côté serveur
-  // sans que `window` soit défini (ex: dans un environnement de test Node.js sans JSDOM complet).
-  app = initializeApp(firebaseConfig); // Peut nécessiter des ajustements si `firebaseConfig` n'est pas défini ici
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+  // Déjà initialisé (HMR, import multiple, etc.)
+  app = getApp();
 }
 
+/* -------------------------------------------------------------------------- */
+/* 2. Services communs (Firestore, Storage)                                   */
+/* -------------------------------------------------------------------------- */
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
+
+/* -------------------------------------------------------------------------- */
+/* 3. Authentification                                                        */
+/*    - Web  : SDK firebase/auth                                              */
+/*    - Natif: Plugin @capacitor-firebase/authentication                      */
+/* -------------------------------------------------------------------------- */
+const isNative = Capacitor.isNativePlatform();
+
+/**
+ * Sur le **web**, on garde l’Auth SDK classique pour profiter
+ * de ses méthodes (onAuthStateChanged, etc.).
+ *
+ * Sur **mobile natif**, on ne crée PAS d’instance `Auth` :
+ * on utilisera **exclusivement** `FirebaseAuthentication`.
+ */
+const auth: Auth | null = !isNative ? getAuth(app) : null;
+
+/* -------------------------------------------------------------------------- */
+/* 4. Exports                                                                 */
+/* -------------------------------------------------------------------------- */
 export { app, auth, db, storage };
+export const nativeAuth = FirebaseAuthentication; // Facade natif (toujours exportée)

@@ -45,4 +45,6 @@ export interface Project {
 
   /* Suppression logique */
   isDeleted?: boolean;
+
+  manualId?: string; // ID manuel saisi ou scanné
 }

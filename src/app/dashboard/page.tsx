@@ -21,16 +21,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { appUser, currentSessionId, logout } = useAuth();
+  const { appUser, logout } = useAuth();
 
   const isProfileIncomplete =
     !appUser?.firstName || !appUser?.lastName || !appUser?.email;
   const isRegistered = true;
-
-  const handleLogout = async () => {
-    await logout("Manual logout", currentSessionId);
-    router.push("/");
-  };
 
   return (
     <Dashboard>
@@ -109,7 +104,7 @@ export default function DashboardPage() {
           size="lg"
           isFullWidth
           endIcon={<LogOut className="w-5 h-5" />}
-          onClick={logout}
+          onClick={() => logout()}
         >
           Se déconnecter
         </Button>

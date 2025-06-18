@@ -5,10 +5,10 @@ import StepDetails from "@/app/sensors/steps/StepDetails";
 import StepFinalize from "@/app/sensors/steps/StepFinalize";
 import StepLocation from "@/app/sensors/steps/StepLocation";
 import StepSuccess from "@/app/sensors/steps/StepSuccess";
-import Button from "@/components/ui/button";
 import { useProjectWizard } from "@/hooks/useProjectWizard";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { Button } from "../ui/Button";
 
 export default function AddProjectWizard({
   open,

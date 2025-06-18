@@ -1,15 +1,22 @@
-// src/services/AuthService.ts
-import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+/* -------------------------------------------------------------------------- */
+/*  ⚠️  FICHIER CLIENT-ONLY : NE PAS L’importer dans un composant serveur     */
+/*      Pas de "use client" – on l’instancie via createAuthService()         */
+/* -------------------------------------------------------------------------- */
+
 import { Timestamp, serverTimestamp } from "firebase/firestore";
 
 import type { IUserRepository } from "@/repositories/IUserRepository";
 import { UserRepository } from "@/repositories/UserRepository";
 import { sessionService } from "@/services/SessionService";
 import type { Session } from "@/types/entities/Session";
-import type { User } from "@/types/entities/User";
+import type { User as AppUser } from "@/types/entities/User";
 import { AuthProviderType } from "@/types/enums/AuthProvider";
 import { GlobalRole } from "@/types/enums/GlobalRole";
+import type { SignInResult } from "@capacitor-firebase/authentication";
 
+/* -------------------------------------------------------------------------- */
+/* Types Firebase Capacitor                                                   */
+/* -------------------------------------------------------------------------- */
 type CapacitorUser = {
   uid: string;
   email?: string | null;
@@ -18,23 +25,31 @@ type CapacitorUser = {
 };
 
 export interface AuthResult {
-  userCredential: any;
-  appUser: User | null;
+  userCredential: SignInResult;
+  appUser: AppUser | null;
   session: Session | null;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Helper : import dynamique du plugin natif                                  */
+/* -------------------------------------------------------------------------- */
+async function loadNativeAuth() {
+  const mod = await import("@capacitor-firebase/authentication");
+  return mod.FirebaseAuthentication;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Classe principale                                                          */
+/* -------------------------------------------------------------------------- */
 export class AuthService {
-  private userRepository: IUserRepository;
+  constructor(private userRepository: IUserRepository = new UserRepository()) {}
 
-  constructor(userRepository: IUserRepository = new UserRepository()) {
-    this.userRepository = userRepository;
-  }
-
+  /* ------------ 1. Création / mise à jour du document utilisateur ---------- */
   private async upsertUserDocument(
-    firebaseUser: CapacitorUser,
-    additionalData: Partial<
+    firebaseUser: CapacitorUser | null,
+    additional: Partial<
       Omit<
-        User,
+        AppUser,
         | "uid"
         | "createdAt"
         | "updatedAt"
@@ -45,46 +60,16 @@ export class AuthService {
         | "preferences"
       >
     > = {}
-  ): Promise<User | null> {
-    if (!firebaseUser || !firebaseUser.uid) return null;
+  ): Promise<AppUser | null> {
+    if (!firebaseUser?.uid) return null;
 
     let user = await this.userRepository.findById(firebaseUser.uid);
     const now = serverTimestamp() as Timestamp;
 
     if (!user) {
-      const newUser: Omit<User, "uid" | "createdAt" | "updatedAt"> = {
-        email: firebaseUser.email || "",
-        displayName:
-          additionalData.displayName ||
-          firebaseUser.displayName ||
-          firebaseUser.email?.split("@")[0] ||
-          "Nouvel utilisateur",
-        photoURL: firebaseUser.photoUrl || null,
-        firstName: additionalData.firstName || "",
-        lastName: additionalData.lastName || "",
-        globalRole: GlobalRole.USER,
-        onboardingStep: 1,
-        onboardingCompleted: false,
-        preferences: {
-          theme: "light",
-          language: "fr",
-          notifications: true,
-          ...additionalData.preferences,
-        },
-        lastLogin: now,
-        fullAddress: additionalData.fullAddress || "",
-        legalStatus: additionalData.legalStatus || "",
-        phone: additionalData.phone || "",
-        position: additionalData.position || "",
-        intent: additionalData.intent || "",
-        companies: additionalData.companies || [],
-        companySelected: additionalData.companySelected || null,
-        favoriteLocationIds: additionalData.favoriteLocationIds || [],
-      };
-
-      user = await this.userRepository.create(newUser, firebaseUser.uid);
+      user = await this.createDefaultProfile(firebaseUser, additional);
     } else {
-      const updates: Partial<User> = {
+      const updates: Partial<AppUser> = {
         lastLogin: now,
         updatedAt: now,
         ...(firebaseUser.displayName &&
@@ -96,36 +81,67 @@ export class AuthService {
             photoURL: firebaseUser.photoUrl,
           }),
       };
-      if (Object.keys(updates).length > 0) {
+
+      if (Object.keys(updates).length) {
         user = await this.userRepository.update(firebaseUser.uid, updates);
       }
     }
-
     return user;
   }
 
-  async createDefaultProfile(firebaseUser: CapacitorUser): Promise<User> {
-    const user = await this.upsertUserDocument(firebaseUser);
-    if (!user) throw new Error("Création du profil utilisateur échouée.");
-    return user;
+  /* ------------ 2. Profil par défaut (appelé par upsert) ------------------- */
+  async createDefaultProfile(
+    firebaseUser: CapacitorUser,
+    additional: Partial<AppUser> = {}
+  ): Promise<AppUser> {
+    const now = serverTimestamp() as Timestamp;
+
+    const newUser: Omit<AppUser, "uid" | "createdAt" | "updatedAt"> = {
+      email: firebaseUser.email || "",
+      displayName:
+        additional.displayName ||
+        firebaseUser.displayName ||
+        firebaseUser.email?.split("@")[0] ||
+        "Nouvel utilisateur",
+      photoURL: firebaseUser.photoUrl || null,
+      firstName: additional.firstName || "",
+      lastName: additional.lastName || "",
+      globalRole: [GlobalRole.USER],
+      onboardingStep: 1,
+      onboardingCompleted: false,
+      preferences: { theme: "light", language: "fr", notifications: true },
+      lastLogin: now,
+      fullAddress: additional.fullAddress || "",
+      legalStatus: additional.legalStatus || "",
+      phone: additional.phone || "",
+      position: additional.position || "",
+      intent: additional.intent || "",
+      companies: additional.companies || [],
+      companySelected: additional.companySelected || null,
+      favoriteLocationIds: additional.favoriteLocationIds || [],
+    };
+
+    return await this.userRepository.create(newUser, firebaseUser.uid);
   }
 
-  async signInWithProvider(
-    providerType: AuthProviderType
-  ): Promise<AuthResult> {
-    let result;
-    switch (providerType) {
+  /* ---------------- 3. Authentification (Google, email) -------------------- */
+  async signInWithProvider(provider: AuthProviderType): Promise<AuthResult> {
+    const FirebaseAuthentication = await loadNativeAuth();
+
+    let result: SignInResult;
+    switch (provider) {
       case AuthProviderType.GOOGLE:
         result = await FirebaseAuthentication.signInWithGoogle();
         break;
       default:
-        throw new Error(`Provider ${providerType} non supporté.`);
+        throw new Error(`Provider ${provider} non supporté.`);
     }
 
-    const firebaseUser = result.user;
+    const firebaseUser = result.user!;
     const appUser = await this.upsertUserDocument(firebaseUser);
     const device =
       typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
+
     const session = await sessionService.createSession({
       uid: firebaseUser.uid,
       device,
@@ -135,14 +151,17 @@ export class AuthService {
   }
 
   async signInUser(email: string, password: string): Promise<AuthResult> {
+    const FirebaseAuthentication = await loadNativeAuth();
     const result = await FirebaseAuthentication.signInWithEmailAndPassword({
       email,
       password,
     });
-    const firebaseUser = result.user;
+
+    const firebaseUser = result.user!;
     const appUser = await this.upsertUserDocument(firebaseUser);
     const device =
       typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
+
     const session = await sessionService.createSession({
       uid: firebaseUser.uid,
       device,
@@ -154,9 +173,9 @@ export class AuthService {
   async signUpUser(
     email: string,
     password: string,
-    additionalData: Partial<
+    additional: Partial<
       Omit<
-        User,
+        AppUser,
         | "uid"
         | "createdAt"
         | "updatedAt"
@@ -170,14 +189,15 @@ export class AuthService {
       >
     > = {}
   ): Promise<AuthResult> {
+    const FirebaseAuthentication = await loadNativeAuth();
     const result = await FirebaseAuthentication.createUserWithEmailAndPassword({
       email,
       password,
     });
-    const firebaseUser = result.user;
 
-    const displayName = `${additionalData.firstName || ""} ${
-      additionalData.lastName || ""
+    const firebaseUser = result.user!;
+    const displayName = `${additional.firstName || ""} ${
+      additional.lastName || ""
     }`.trim();
     if (displayName) {
       await FirebaseAuthentication.updateProfile({ displayName });
@@ -185,11 +205,12 @@ export class AuthService {
 
     const appUser = await this.upsertUserDocument(firebaseUser, {
       displayName: displayName || undefined,
-      ...additionalData,
+      ...additional,
     });
 
     const device =
       typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
+
     const session = await sessionService.createSession({
       uid: firebaseUser.uid,
       device,
@@ -198,93 +219,54 @@ export class AuthService {
     return { userCredential: result, appUser, session };
   }
 
-  async signOutUser(currentSessionId?: string): Promise<void> {
-    try {
-      if (currentSessionId) {
-        await sessionService.revokeSession(currentSessionId);
-      }
-      await FirebaseAuthentication.signOut();
-    } catch (err) {
-      console.error("Erreur de déconnexion :", err);
-      throw err;
-    }
+  /* ---------------- 4. Déconnexion / Reset / Multi-devices ----------------- */
+  async signOutUser(sessionId?: string) {
+    const FirebaseAuthentication = await loadNativeAuth();
+    if (sessionId) await sessionService.revokeSession(sessionId);
+    await FirebaseAuthentication.signOut();
   }
 
-  async signOutAllDevices(uid: string): Promise<void> {
-    try {
-      await sessionService.revokeAllSessions(uid);
-      await FirebaseAuthentication.signOut();
-    } catch (err) {
-      console.error("Erreur lors de la déconnexion globale :", err);
-      throw err;
-    }
+  async signOutAllDevices(uid: string) {
+    const FirebaseAuthentication = await loadNativeAuth();
+    await sessionService.revokeAllSessions(uid);
+    await FirebaseAuthentication.signOut();
   }
 
-  async sendPasswordReset(email: string): Promise<void> {
-    try {
-      await FirebaseAuthentication.sendPasswordResetEmail({ email });
-    } catch (err) {
-      console.error(
-        "Erreur lors de l'envoi du mail de réinitialisation :",
-        err
-      );
-      throw err;
-    }
+  async sendPasswordReset(email: string) {
+    const FirebaseAuthentication = await loadNativeAuth();
+    await FirebaseAuthentication.sendPasswordResetEmail({ email });
   }
 
-  async getAppUserProfile(uid: string): Promise<User | null> {
-    try {
-      return await this.userRepository.findById(uid);
-    } catch (err) {
-      console.error("Erreur lors de la récupération du profil :", err);
-      return null;
-    }
+  /* ---------------- 5. Profil utils --------------------------------------- */
+  getAppUserProfile(uid: string) {
+    return this.userRepository.findById(uid);
   }
 
-  async updateUserProfileData(
-    userId: string,
-    data: Partial<User>
-  ): Promise<User | null> {
-    const { uid, email, globalRole, createdAt, lastLogin, ...updatableData } =
-      data;
-    if (Object.keys(updatableData).length === 0) {
-      throw new Error("Aucune donnée à mettre à jour.");
-    }
-
-    if (updatableData.displayName) {
-      await FirebaseAuthentication.updateProfile({
-        displayName: updatableData.displayName,
-      });
-    }
-    if (updatableData.photoURL) {
-      await FirebaseAuthentication.updateProfile({
-        photoUrl: updatableData.photoURL,
-      });
-    }
-
+  updateUserProfileData(userId: string, data: Partial<AppUser>) {
     return this.userRepository.update(userId, {
-      ...updatableData,
+      ...data,
       updatedAt: serverTimestamp() as Timestamp,
     });
   }
 
-  async deleteCurrentUserAccount(currentSessionId?: string): Promise<void> {
+  async deleteCurrentUserAccount(sessionId?: string) {
+    const FirebaseAuthentication = await loadNativeAuth();
     const { user } = await FirebaseAuthentication.getCurrentUser();
     if (!user) throw new Error("Aucun utilisateur connecté.");
 
-    try {
-      if (currentSessionId) {
-        await sessionService.revokeSession(currentSessionId);
-      }
-      await this.userRepository.delete(user.uid);
-      await FirebaseAuthentication.deleteUser();
-    } catch (err: any) {
-      if (err?.code === "auth/requires-recent-login") {
-        throw new Error("Reconnectez-vous pour supprimer votre compte.");
-      }
-      throw err;
-    }
+    if (sessionId) await sessionService.revokeSession(sessionId);
+    await this.userRepository.delete(user.uid);
+    await FirebaseAuthentication.deleteUser();
   }
 }
 
-export const authService = new AuthService();
+/* -------------------------------------------------------------------------- */
+/* Factory : instance unique, null côté serveur                               */
+/* -------------------------------------------------------------------------- */
+let _instance: AuthService | null = null;
+
+export async function createAuthService(): Promise<AuthService | null> {
+  if (typeof window === "undefined") return null;
+  if (!_instance) _instance = new AuthService();
+  return _instance;
+}

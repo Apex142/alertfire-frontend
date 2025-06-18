@@ -1,3 +1,5 @@
+"use client";
+
 // src/lib/factories/AuthProviderFactory.ts
 import { AuthProviderType } from "@/types/enums/AuthProvider";
 import {

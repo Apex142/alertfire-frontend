@@ -34,8 +34,12 @@ export function useNotifications() {
         setIsLoading(false);
         setError(null);
       },
-      (err: any) => {
-        setError(err.message || "Impossible de charger les notifications.");
+      (err: unknown) => {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Impossible de charger les notifications.");
+        }
         setIsLoading(false);
       }
     );
@@ -55,8 +59,12 @@ export function useNotifications() {
         setIsLoading(false);
         setError(null);
       },
-      (err: any) => {
-        setError(err.message || "Impossible de charger les notifications.");
+      (err: unknown) => {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Impossible de charger les notifications.");
+        }
         setIsLoading(false);
       }
     );

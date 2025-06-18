@@ -22,12 +22,18 @@ export const useUsers = () => {
         // On utilise la méthode du service pour récupérer les données.
         const fetchedUsers = await userService.getAllUsers();
         setUsers(fetchedUsers);
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("useUsers Error:", e);
-        setError(
-          e.message ||
+        if (e instanceof Error) {
+          setError(
+            e.message ||
+              "Une erreur est survenue lors du chargement des utilisateurs."
+          );
+        } else {
+          setError(
             "Une erreur est survenue lors du chargement des utilisateurs."
-        );
+          );
+        }
       } finally {
         setLoading(false);
       }

@@ -80,14 +80,14 @@ export class UserRepository implements IUserRepository {
     const newUser: User = {
       uid,
       email: userData.email,
-      displayName: userData.displayName || null,
+      displayName: userData.displayName || "",
       photoURL: userData.photoURL || null,
       createdAt: now,
       updatedAt: now,
       lastLogin: now,
       onboardingStep: 1,
       onboardingCompleted: false,
-      globalRole: GlobalRole.USER, // Rôle par défaut
+      globalRole: [GlobalRole.USER], // Rôle par défaut
       companies: userData.companies || [],
       companySelected: userData.companySelected || null,
       preferences: {
@@ -97,6 +97,13 @@ export class UserRepository implements IUserRepository {
         notifications: true,
       },
       favoriteLocationIds: [],
+      firstName: "",
+      lastName: "",
+      fullAddress: "",
+      legalStatus: "",
+      phone: "",
+      position: "",
+      intent: "",
     };
 
     await setDoc(doc(this.usersCollection, uid), newUser);

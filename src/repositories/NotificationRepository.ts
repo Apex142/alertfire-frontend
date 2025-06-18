@@ -15,7 +15,11 @@ import {
 import { INotificationRepository } from "./INotificationRepository";
 
 export class NotificationRepository implements INotificationRepository {
-  getUserNotifications(uid, onChange, onError) {
+  getUserNotifications(
+    uid: string,
+    onChange: (notifications: Notification[]) => void,
+    onError: (error: Error) => void
+  ) {
     const q = query(
       collection(db, "notifications"),
       where("userId", "==", uid),
@@ -27,8 +31,8 @@ export class NotificationRepository implements INotificationRepository {
         const data = snapshot.docs.map((docNode) => {
           const d = docNode.data();
           return {
+            ...(d as Omit<Notification, "id" | "createdAt">),
             id: docNode.id,
-            ...d,
             createdAt:
               d.createdAt instanceof Timestamp ? d.createdAt : Timestamp.now(),
           } as Notification;
@@ -39,12 +43,12 @@ export class NotificationRepository implements INotificationRepository {
     );
   }
 
-  async markAllAsRead(uid, notifications) {
+  async markAllAsRead(uid: string, notifications: Notification[]) {
     const batch = writeBatch(db);
     notifications
-      .filter((n) => !n.read)
+      .filter((n) => !n.read && typeof n.id === "string")
       .forEach((notif) => {
-        batch.update(doc(db, "notifications", notif.id), {
+        batch.update(doc(db, "notifications", notif.id as string), {
           read: true,
           updatedAt: serverTimestamp(),
         });

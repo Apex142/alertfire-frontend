@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function NotFound() {
@@ -22,9 +23,9 @@ export default function NotFound() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour
             </Button>
-            <Button asChild>
-              <a href="/">Accueil</a>
-            </Button>
+            <Link href="/" passHref>
+              <Button>Accueil</Button>
+            </Link>
           </div>
         </main>
       </div>

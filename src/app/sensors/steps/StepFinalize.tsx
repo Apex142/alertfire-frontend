@@ -1,6 +1,6 @@
 "use client";
 
-import Button from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { useProjectWizard } from "@/hooks/useProjectWizard";
 import { motion } from "framer-motion";
 import { Camera } from "lucide-react";

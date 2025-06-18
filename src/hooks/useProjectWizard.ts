@@ -64,8 +64,8 @@ export function useProjectWizard() {
       id: crypto.randomUUID(),
       name: data.name.trim(),
       description: data.description.trim() || undefined,
-      latitude: data.latitude,
-      longitude: data.longitude,
+      latitude: data.latitude ?? 0,
+      longitude: data.longitude ?? 0,
       altitude: data.altitude,
       status: ProjectStatus.OK,
       createdAt: now,
@@ -74,7 +74,9 @@ export function useProjectWizard() {
       ownerCompanyId: "default",
       technicianIds: data.technicianIds,
       firefighterIds: data.firefighterIds,
-      manualId: data.manualId.trim(),
+      manualId: data.manualId.trim() ?? 0,
+      activations: [],
+      activationCount: 0,
     };
 
     /* 2. Nettoyage : on retire *toutes* les clés indéfinies */
