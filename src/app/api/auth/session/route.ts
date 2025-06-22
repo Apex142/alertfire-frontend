@@ -18,6 +18,8 @@ export async function POST(request: NextRequest) {
     const requestBody = await request.json();
     const { action, token } = requestBody; // 'token' est l'ID Token Firebase du client
 
+    console.log("API /api/auth/session POST: Action demandée:");
+
     if (!action) {
       return NextResponse.json(
         { error: "Action non spécifiée." },
@@ -103,6 +105,10 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("API /api/auth/session POST Error:", error);
     // Éviter de divulguer des détails d'erreur sensibles
+    console.log(
+      "API /api/auth/session POST: Erreur lors du traitement de la session:",
+      error.message || error
+    );
     return NextResponse.json(
       { error: "Erreur interne du serveur lors du traitement de la session." },
       { status: 500 }

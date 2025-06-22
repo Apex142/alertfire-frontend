@@ -2,11 +2,6 @@
 <resources>
     <string name="app_name">alertfire</string>
     <string name="title_activity_main">alertfire</string>
-<<<<<<< HEAD
-    <string name="package_name">com.alertfire</string>
-    <string name="custom_url_scheme">com.alertfire</string>
-=======
     <string name="package_name">com.apex.alertfire</string>
     <string name="custom_url_scheme">com.apex.alertfire</string>
->>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
 </resources>

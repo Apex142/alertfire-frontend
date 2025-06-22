@@ -1,41 +1,33 @@
 {
   "project_info": {
-    "project_number": "723562152166",
-    "project_id": "alertfire-8306a",
-    "storage_bucket": "alertfire-8306a.firebasestorage.app"
+    "project_number": "905863145752",
+    "project_id": "alertfire-486db",
+    "storage_bucket": "alertfire-486db.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:723562152166:android:10f7d04ba2f740bc163b27",
+        "mobilesdk_app_id": "1:905863145752:android:c202da3dbeb6c4b9a5d66d",
         "android_client_info": {
-          "package_name": "com.alertfire"
+          "package_name": "com.apex.alertfire"
         }
       },
       "oauth_client": [
         {
-          "client_id": "723562152166-roatvg1anffldbnao5rdl3cnv774rb0b.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.alertfire",
-            "certificate_hash": "13886cf7ec3b9ba51479d2f5187ea1789eebd44c"
-          }
-        },
-        {
-          "client_id": "723562152166-qsa3h9u8chfvt8u10o44k5gtoa5bctdf.apps.googleusercontent.com",
+          "client_id": "905863145752-ho53e18dtp4a3iopq4ftdbkfi81979vf.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDmwDQj5toPqk7YwVhYTF292qov_LI5ozs"
+          "current_key": "AIzaSyAsVIGJCmcAInEMF5tm4IeAKs7RjBLc7TU"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "723562152166-qsa3h9u8chfvt8u10o44k5gtoa5bctdf.apps.googleusercontent.com",
+              "client_id": "905863145752-ho53e18dtp4a3iopq4ftdbkfi81979vf.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

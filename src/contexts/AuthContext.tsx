@@ -1,12 +1,9 @@
+/* -------------------------------------------------------------------------- */
+/*  AuthContext – Next 13+  |  React 18  |  “use client”                      */
+/* -------------------------------------------------------------------------- */
+
 "use client";
 
-import { createAuthClient } from "@/lib/auth/AuthClientFactory";
-import { AnyFirebaseUser } from "@/lib/auth/IAuthClient";
-import { db } from "@/lib/firebase/client";
-import { createAuthService } from "@/services/AuthService";
-import { sessionService } from "@/services/SessionService";
-import type { Session } from "@/types/entities/Session";
-import type { User as AppUser } from "@/types/entities/User";
 import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import {
   createContext,
@@ -19,52 +16,80 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { createAuthClient } from "@/lib/auth/AuthClientFactory";
+import { AnyFirebaseUser } from "@/lib/auth/IAuthClient";
+import { db } from "@/lib/firebase/client";
+import { createAuthService } from "@/services/AuthService";
+import { sessionService } from "@/services/SessionService";
+import type { Session } from "@/types/entities/Session";
+import type { User as AppUser } from "@/types/entities/User";
+
 const SESSION_ID_STORAGE_KEY = "sessionId";
 
+/* -------------------------------------------------------------------------- */
+/*  Types & contexte                                                          */
+/* -------------------------------------------------------------------------- */
+
 interface AuthContextType {
-  firebaseUser: AnyFirebaseUser;
+  firebaseUser: AnyFirebaseUser | null;
   appUser: AppUser | null;
   loading: boolean;
   currentSessionId: string | null;
   logout: (reason?: string) => Promise<void>;
-  setSessionDetails: (user: AppUser | null, session: Session | null) => void;
+  setSessionDetails: (u: AppUser | null, s: Session | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [firebaseUser, setFirebaseUser] = useState<AnyFirebaseUser>(null);
+/* -------------------------------------------------------------------------- */
+/*  Provider                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  /* ---------- state ------------------------------------------------------ */
+
+  const [firebaseUser, setFirebaseUser] = useState<AnyFirebaseUser | null>(
+    null
+  );
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  /* session courante  ----------------------------------------------------- */
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const currentSessionIdRef = useRef<string | null>(null);
 
-  const userDocListenerRef = useRef<Unsubscribe | null>(null);
-  const sessionDocListenerRef = useRef<Unsubscribe | null>(null);
+  /* service métier Firebase ----------------------------------------------- */
   const authServiceRef = useRef<Awaited<
     ReturnType<typeof createAuthService>
   > | null>(null);
+  const [serviceReady, setServiceReady] = useState(false);
 
+  /* listeners Firestore ---------------------------------------------------- */
+  const userDocListenerRef = useRef<Unsubscribe | null>(null);
+  const sessionDocListenerRef = useRef<Unsubscribe | null>(null);
+
+  /* ----------------------------------------------------------------------- */
+  /*  Boot – charge AuthService + lit localStorage                           */
+  /* ----------------------------------------------------------------------- */
   useEffect(() => {
-    createAuthService().then((service) => {
-      authServiceRef.current = service;
+    let cancelled = false;
+
+    createAuthService().then((svc) => {
+      if (cancelled) return;
+      authServiceRef.current = svc;
+      setServiceReady(true);
     });
+
+    const stored = localStorage.getItem(SESSION_ID_STORAGE_KEY);
+    setCurrentSessionId(stored);
+    currentSessionIdRef.current = stored;
+
+    return () => void (cancelled = true);
   }, []);
 
-  useEffect(() => {
-    const id = localStorage.getItem(SESSION_ID_STORAGE_KEY);
-    setCurrentSessionId(id);
-    currentSessionIdRef.current = id;
-  }, []);
-
-  useEffect(() => {
-    currentSessionIdRef.current = currentSessionId;
-    if (currentSessionId) {
-      localStorage.setItem(SESSION_ID_STORAGE_KEY, currentSessionId);
-    } else {
-      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-    }
-  }, [currentSessionId]);
+  /* ----------------------------------------------------------------------- */
+  /*  Helpers                                                                */
+  /* ----------------------------------------------------------------------- */
 
   const clearListeners = useCallback(() => {
     userDocListenerRef.current?.();
@@ -74,65 +99,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const performLogout = useCallback(
-    async (reason?: string, forceSessionId?: string | null) => {
+    async (reason = "Manual logout", forceSessionId?: string | null) => {
       setLoading(true);
       clearListeners();
 
-      const authService = authServiceRef.current;
       const sessionId = forceSessionId ?? currentSessionIdRef.current;
+      const authService = authServiceRef.current;
 
-      try {
-        if (reason?.includes("expired") || reason?.includes("revoked")) {
-          toast.warning("Votre session a expiré ou a été révoquée.");
-        } else if (reason?.includes("banned")) {
-          toast.error("Votre compte a été banni.");
-        } else if (reason && reason !== "Manual user logout") {
-          toast.info(`Déconnexion : ${reason}`);
-        }
+      /* feedback ---------------------------------------------------------- */
+      if (/expired|revoked/.test(reason)) toast.warning("Session expirée.");
+      else if (/bann?ed/.test(reason)) toast.error("Compte banni.");
+      else if (reason !== "Manual logout")
+        toast.info(`Déconnexion : ${reason}`);
 
-        if (sessionId) {
-          await fetch(`/api/auth/session/${sessionId}/delete`, {
-            method: "POST",
-          });
-        }
-
-        if (authService) {
-          await authService.signOutUser(sessionId ?? undefined);
-        }
-
-        await fetch("/api/auth/session", {
-          method: "POST",
-          body: JSON.stringify({ action: "logout" }),
+      /* 1️⃣  Supprime le document session côté API ----------------------- */
+      if (sessionId) {
+        await fetch(`/api/auth/session/${sessionId}`, {
+          method: "DELETE",
         }).catch(() => {});
-
-        setFirebaseUser(null);
-        setAppUser(null);
-        setCurrentSessionId(null);
-        currentSessionIdRef.current = null;
-        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-      } catch (err) {
-        console.error("performLogout error:", err);
       }
+
+      /* 2️⃣  Firebase sign-out ------------------------------------------ */
+      await authService?.signOutUser().catch(() => {});
+
+      /* 3️⃣  Nettoie le cookie httpOnly ---------------------------------- */
+      await fetch("/api/auth/session", {
+        method: "POST",
+        body: JSON.stringify({ action: "logout" }),
+      }).catch(() => {});
+
+      /* 4️⃣  Reset local -------------------------------------------------- */
+      setFirebaseUser(null);
+      setAppUser(null);
+      setCurrentSessionId(null);
+      currentSessionIdRef.current = null;
+      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+
       setLoading(false);
     },
     [clearListeners]
   );
 
-  const setSessionDetailsAction = (
-    user: AppUser | null,
-    session: Session | null
-  ) => {
-    setAppUser(user);
-    setCurrentSessionId(session?.sessionId ?? null);
-    currentSessionIdRef.current = session?.sessionId ?? null;
-    if (session?.sessionId) {
-      localStorage.setItem(SESSION_ID_STORAGE_KEY, session.sessionId);
-    } else {
-      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-    }
-  };
+  const setSessionDetails = useCallback(
+    (user: AppUser | null, session: Session | null) => {
+      setAppUser(user);
+      setCurrentSessionId(session?.sessionId ?? null);
+      currentSessionIdRef.current = session?.sessionId ?? null;
+
+      if (session?.sessionId) {
+        localStorage.setItem(SESSION_ID_STORAGE_KEY, session.sessionId);
+      } else {
+        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+      }
+    },
+    []
+  );
+
+  /* ----------------------------------------------------------------------- */
+  /*  Auth state listener (uniquement quand le service est prêt)             */
+  /* ----------------------------------------------------------------------- */
 
   useEffect(() => {
+    if (!serviceReady) return;
+
     const authClient = createAuthClient();
     if (!authClient) return;
 
@@ -140,39 +169,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       clearListeners();
 
+      /* A. Pas de user -> logout complet ---------------------------------- */
       if (!user) {
-        setFirebaseUser(null);
-        setAppUser(null);
-        setCurrentSessionId(null);
-        currentSessionIdRef.current = null;
-        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-        await fetch("/api/auth/session", {
-          method: "POST",
-          body: JSON.stringify({ action: "logout" }),
-        }).catch(() => {});
-        setLoading(false);
+        await performLogout();
         return;
       }
 
+      /* B. User présent --------------------------------------------------- */
       setFirebaseUser(user);
 
       try {
-        const authService = authServiceRef.current;
-        if (!authService) return;
+        const authService = authServiceRef.current!;
+        let profile = await authService.getAppUserProfile(user.uid);
 
-        let appUser = await authService.getAppUserProfile(user.uid);
-        if (!appUser) {
-          appUser = await authService.createUserProfile(user);
-          toast.success("Profil utilisateur créé automatiquement.");
+        if (!profile) {
+          profile = await authService.createUserProfile(user);
+          toast.success("Profil utilisateur créé.");
         }
-
-        if (appUser.isBanned) {
-          await performLogout("User is banned");
+        if (profile.isBanned) {
+          await performLogout("User banned");
           return;
         }
+        setAppUser(profile);
 
-        setAppUser(appUser);
-
+        /* session la + récente non révoquée -------------------------------- */
         const sessions = await sessionService.getUserSessions(user.uid);
         const active =
           sessions
@@ -182,24 +202,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 (b.createdAt?.toMillis?.() ?? 0) -
                 (a.createdAt?.toMillis?.() ?? 0)
             )[0] ?? null;
+        setSessionDetails(profile, active);
 
-        setSessionDetailsAction(appUser, active);
-
+        /* listener user doc ------------------------------------------------ */
         userDocListenerRef.current = onSnapshot(
           doc(db, "users", user.uid),
           async (snap) => {
-            if (!snap.exists()) {
-              await performLogout("User document deleted from Firestore");
-              return;
-            }
+            if (!snap.exists()) return performLogout("User doc deleted");
             const updated = snap.data() as AppUser;
             setAppUser(updated);
-            if (updated.isBanned)
-              await performLogout("User dynamically banned");
+            if (updated.isBanned) await performLogout("User banned");
           },
-          async () => await performLogout("Error listening to user document")
+          () => performLogout("User doc listener error")
         );
 
+        /* cookie httpOnly -------------------------------------------------- */
         const token = await authClient.getIdToken();
         if (token) {
           await fetch("/api/auth/session", {
@@ -209,9 +226,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (err) {
         console.error("Auth init error:", err);
-        toast.error("Erreur lors de l'initialisation de la session.");
-        await performLogout("Auth init error");
+        toast.error("Erreur d’initialisation.");
+        await performLogout("Init error");
       }
+
       setLoading(false);
     });
 
@@ -219,58 +237,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       unsubscribe();
       clearListeners();
     };
-  }, [performLogout, clearListeners]);
+  }, [serviceReady, performLogout, clearListeners, setSessionDetails]);
+
+  /* ----------------------------------------------------------------------- */
+  /*  Listener sur le document de session actif                              */
+  /* ----------------------------------------------------------------------- */
 
   useEffect(() => {
-    if (sessionDocListenerRef.current) sessionDocListenerRef.current();
+    sessionDocListenerRef.current?.(); // stop éventuel précédent
 
     if (currentSessionId && appUser && firebaseUser) {
       sessionDocListenerRef.current = onSnapshot(
         doc(db, "sessions", currentSessionId),
         async (snap) => {
-          if (!snap.exists()) {
-            await performLogout("Session document deleted remotely");
-            return;
-          }
-          const session = snap.data() as Session;
-          if (session.uid !== appUser.uid) {
-            await performLogout("Session UID mismatch");
-            return;
-          }
-          if (session.revoked) {
-            await performLogout("Session revoked remotely");
-            return;
-          }
-          if (session.expiresAt?.toDate().getTime() < Date.now()) {
-            await performLogout("Session expired");
-          }
+          if (!snap.exists()) return performLogout("Session doc deleted");
+
+          const s = snap.data() as Session;
+          const isExpired = s.expiresAt?.toDate().getTime() < Date.now();
+
+          /* ⚠️  NE déconnecte plus si un *autre* device crée une nouvelle   */
+          /*     session : on ne vérifie plus “uid mismatch” ni “revoked     */
+          /*     flag” posé par createSession() ailleurs.                     */
+          if (isExpired) await performLogout("Session expired");
         },
-        async () => await performLogout("Error listening to session document")
+        () => performLogout("Session doc listener error")
       );
     }
 
     return () => sessionDocListenerRef.current?.();
   }, [currentSessionId, appUser, firebaseUser, performLogout]);
 
+  /* ----------------------------------------------------------------------- */
+  /*  Fallback UI                                                            */
+  /* ----------------------------------------------------------------------- */
+
   if (!loading && firebaseUser && !appUser) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-background text-foreground">
         <p className="mb-4 text-lg font-semibold">
-          Profil utilisateur introuvable.
+          Profil utilisateur manquant
         </p>
         <p className="mb-6 text-sm text-muted-foreground">
-          Veuillez contacter le support, réessayer plus tard ou vous déconnecter
-          ci-dessous.
+          Contactez le support ou déconnectez-vous.
         </p>
         <button
           className="rounded bg-primary px-4 py-2 text-white"
-          onClick={() => performLogout("Manual logout from fallback")}
+          onClick={() => performLogout("Fallback logout")}
         >
           Se déconnecter
         </button>
       </div>
     );
   }
+
+  /* ----------------------------------------------------------------------- */
+  /*  Provider                                                               */
+  /* ----------------------------------------------------------------------- */
 
   return (
     <AuthContext.Provider
@@ -279,18 +301,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         appUser,
         loading,
         currentSessionId,
-        logout: (reason?: string) =>
-          performLogout(reason || "Manual user logout"),
-        setSessionDetails: setSessionDetailsAction,
+        logout: performLogout,
+        setSessionDetails,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = (): AuthContextType => {
+/* -------------------------------------------------------------------------- */
+/*  Hook utilitaire                                                           */
+/* -------------------------------------------------------------------------- */
+export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) throw new Error("useAuth doit être appelé dans un <AuthProvider>");
   return ctx;
-};
+}

@@ -1,6 +1,7 @@
 // src/services/SessionService.ts
 import { SessionRepository } from "@/repositories/SessionRepository";
 import { Session } from "@/types/entities/Session";
+import { Timestamp } from "firebase/firestore";
 
 export class SessionService {
   private repo: SessionRepository;
@@ -25,18 +26,21 @@ export class SessionService {
     userAgent?: string;
     expiresInMs?: number;
   }): Promise<Session> {
-    // 1. Révoque toutes les sessions existantes actives pour ce user AVANT de créer la nouvelle
-    await this.repo.revokeAll(uid);
+    // Import Timestamp from Firestore
+    // import { Timestamp } from "firebase/firestore"; // Uncomment if not already imported
+    const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiresInMs));
 
-    const expiresAt = new Date(Date.now() + expiresInMs);
-    const sessionData: any = {
+    const sessionData: Omit<
+      Session,
+      "sessionId" | "createdAt" | "lastActiveAt"
+    > = {
       uid,
       device: device || "unknown_device",
+      ipAddress: ipAddress || "",
+      userAgent: userAgent || "",
       expiresAt,
       revoked: false,
     };
-    if (ipAddress !== undefined) sessionData.ipAddress = ipAddress;
-    if (userAgent !== undefined) sessionData.userAgent = userAgent;
 
     return this.repo.create(sessionData);
   }

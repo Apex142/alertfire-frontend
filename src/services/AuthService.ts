@@ -126,13 +126,26 @@ export class AuthService {
     cred: SignInResult | { user: WebUser }
   ): Promise<AuthResult> {
     const appUser = await this.upsertUser(fbUser);
-    const device =
-      typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
 
-    const session = await sessionService.createSession({
-      uid: fbUser.uid,
-      device,
-    });
+    const device =
+      typeof window !== "undefined"
+        ? navigator.userAgent
+        : "server-render-device";
+
+    /* ①  essaie de réutiliser la session active du même device -------------- */
+    const existing = await sessionService.getUserSessions(fbUser.uid);
+    const reuse = existing?.find((s) => !s.revoked && s.device === device);
+
+    const session = reuse
+      ? await sessionService.updateActivity(reuse.sessionId!)
+      : await sessionService.createSession({ uid: fbUser.uid, device });
+
+    if (!session) {
+      throw new Error(
+        "Impossible de créer ou mettre à jour la session utilisateur."
+      );
+    }
+
     return { userCredential: cred, appUser, session };
   }
 

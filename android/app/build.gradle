@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-// On applique les plugins en premier
-apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services' // << DÉPLACÉ ICI, C'EST LA CORRECTION PRINCIPALE
-
-android {
-    namespace "com.alertfire"
-    compileSdk rootProject.ext.compileSdkVersion
-    defaultConfig {
-        applicationId "com.alertfire"
-=======
 apply plugin: 'com.android.application'
 
 android {
@@ -16,18 +5,14 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.apex.alertfire"
->>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
-<<<<<<< HEAD
-=======
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
->>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
@@ -59,10 +44,6 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-<<<<<<< HEAD
-// L'ancien bloc try-catch a été supprimé.
-// Le plugin a été déplacé en haut du fichier.
-=======
 try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) {
@@ -71,4 +52,3 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
->>>>>>> 5162f99 (Refactor code structure and remove redundant changes)
