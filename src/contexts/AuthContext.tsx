@@ -1,13 +1,12 @@
 "use client";
 
-import { createAuthClient } from "@/lib/auth/AuthClientFactory"; // ⬅️ sync
+import { createAuthClient } from "@/lib/auth/AuthClientFactory";
 import { AnyFirebaseUser } from "@/lib/auth/IAuthClient";
 import { db } from "@/lib/firebase/client";
-import { createAuthService } from "@/services/AuthService"; // async factory
+import { createAuthService } from "@/services/AuthService";
 import { sessionService } from "@/services/SessionService";
 import type { Session } from "@/types/entities/Session";
 import type { User as AppUser } from "@/types/entities/User";
-
 import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import {
   createContext,
@@ -20,6 +19,8 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+const SESSION_ID_STORAGE_KEY = "sessionId";
+
 interface AuthContextType {
   firebaseUser: AnyFirebaseUser;
   appUser: AppUser | null;
@@ -29,18 +30,9 @@ interface AuthContextType {
   setSessionDetails: (user: AppUser | null, session: Session | null) => void;
 }
 
-const SESSION_ID_STORAGE_KEY = "sessionId";
-const AuthContext = createContext<AuthContextType>({
-  firebaseUser: null,
-  appUser: null,
-  loading: true,
-  currentSessionId: null,
-  logout: async () => {},
-  setSessionDetails: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  /* ------------------------------- state -------------------------------- */
   const [firebaseUser, setFirebaseUser] = useState<AnyFirebaseUser>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,14 +45,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ReturnType<typeof createAuthService>
   > | null>(null);
 
-  /* -------------------- charge AuthService une fois -------------------- */
   useEffect(() => {
     createAuthService().then((service) => {
       authServiceRef.current = service;
     });
   }, []);
 
-  /* --------- synchronise localStorage <-> state sessionId -------------- */
   useEffect(() => {
     const id = localStorage.getItem(SESSION_ID_STORAGE_KEY);
     setCurrentSessionId(id);
@@ -76,7 +66,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentSessionId]);
 
-  /* -------------------------- helpers ---------------------------------- */
   const clearListeners = useCallback(() => {
     userDocListenerRef.current?.();
     sessionDocListenerRef.current?.();
@@ -104,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (sessionId) {
           await fetch(`/api/session/${sessionId}/delete`, { method: "POST" });
         }
+
         if (authService) {
           await authService.signOutUser(sessionId ?? undefined);
         }
@@ -126,11 +116,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [clearListeners]
   );
 
-  /* ------------------------ auth listener ------------------------------ */
+  const setSessionDetailsAction = (
+    user: AppUser | null,
+    session: Session | null
+  ) => {
+    setAppUser(user);
+    setCurrentSessionId(session?.sessionId ?? null);
+    currentSessionIdRef.current = session?.sessionId ?? null;
+    if (session?.sessionId) {
+      localStorage.setItem(SESSION_ID_STORAGE_KEY, session.sessionId);
+    } else {
+      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+    }
+  };
+
   useEffect(() => {
-    /* createAuthClient est SYNCHRONE */
     const authClient = createAuthClient();
-    if (!authClient) return; // SSR safety
+    if (!authClient) return;
 
     const unsubscribe = authClient.addAuthListener(async (user) => {
       setLoading(true);
@@ -158,7 +160,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         let appUser = await authService.getAppUserProfile(user.uid);
         if (!appUser) {
-          appUser = await authService.createDefaultProfile(user);
+          appUser = await authService.createUserProfile(user);
           toast.success("Profil utilisateur créé automatiquement.");
         }
 
@@ -217,7 +219,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [performLogout, clearListeners]);
 
-  /* ---------------------- session listener ----------------------------- */
   useEffect(() => {
     if (sessionDocListenerRef.current) sessionDocListenerRef.current();
 
@@ -245,25 +246,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         async () => await performLogout("Error listening to session document")
       );
     }
+
     return () => sessionDocListenerRef.current?.();
   }, [currentSessionId, appUser, firebaseUser, performLogout]);
 
-  /* -------------------- setter centralisé ------------------------------ */
-  const setSessionDetailsAction = (
-    user: AppUser | null,
-    session: Session | null
-  ) => {
-    setAppUser(user);
-    setCurrentSessionId(session?.sessionId ?? null);
-    currentSessionIdRef.current = session?.sessionId ?? null;
-    if (session?.sessionId) {
-      localStorage.setItem(SESSION_ID_STORAGE_KEY, session.sessionId);
-    } else {
-      localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-    }
-  };
-
-  /* ----------------- fallback si profil introuvable -------------------- */
   if (!loading && firebaseUser && !appUser) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-background text-foreground">
@@ -284,7 +270,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  /* ------------------------------- UI ---------------------------------- */
   return (
     <AuthContext.Provider
       value={{
@@ -302,7 +287,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
