@@ -4,7 +4,7 @@
 
 import { PropagationPrediction } from "@/types/entities/PropagationPrediction";
 
-const ENDPOINT = "http://localhost:5000/api/predict-propagation";
+const ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/predict-propagation`;
 
 type ApiResponse = {
   success: boolean;
