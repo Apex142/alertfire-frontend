@@ -2,31 +2,32 @@ import {
   User as CapacitorUser,
   FirebaseAuthentication,
 } from "@capacitor-firebase/authentication";
+import { Capacitor } from "@capacitor/core";
 import { AnyFirebaseUser, IAuthClient } from "./IAuthClient";
 
 export class NativeAuthClient implements IAuthClient {
-  /** Cache local (toujours mis à jour par les listeners) */
   private _currentUser: AnyFirebaseUser = null;
 
   constructor() {
-    /* Initialise la valeur dès le démarrage de l’appli */
+    if (!Capacitor.isNativePlatform()) return; // Évite les erreurs côté web
+
     FirebaseAuthentication.getCurrentUser()
       .then(({ user }) => {
         this._currentUser = user ?? null;
       })
       .catch(() => {
-        /* ignore – restera à null */
+        /* ignore */
       });
   }
 
-  /** Enregistre un callback à chaque changement d’état ; renvoie la fonction de désinscription */
   addAuthListener(cb: (u: AnyFirebaseUser) => void): () => void {
+    if (!Capacitor.isNativePlatform()) return () => {};
+
     const wrapper = ({ user }: { user: CapacitorUser | null }) => {
       this._currentUser = user ?? null;
       cb(this._currentUser);
     };
 
-    /* ① API ≥ 5.1 -------------------------------------------- */
     if (
       "addAuthStateChangeListener" in FirebaseAuthentication &&
       typeof (
@@ -47,7 +48,6 @@ export class NativeAuthClient implements IAuthClient {
       return () => sub.remove();
     }
 
-    /* ② Ancienne API (“authStateChange” event) ---------------- */
     const listenerPromise = FirebaseAuthentication.addListener(
       "authStateChange",
       wrapper
@@ -62,19 +62,18 @@ export class NativeAuthClient implements IAuthClient {
     };
   }
 
-  /** Logout natif */
   async signOut(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) return;
     await FirebaseAuthentication.signOut();
     this._currentUser = null;
   }
 
-  /** ID-token JWT pour tes appels serveur sécurisés */
   async getIdToken(): Promise<string | null> {
+    if (!Capacitor.isNativePlatform()) return null;
     const { token } = await FirebaseAuthentication.getIdToken();
     return token ?? null;
   }
 
-  /** Utilisateur courant (synchrone grâce au cache local) */
   currentUser(): AnyFirebaseUser {
     return this._currentUser;
   }

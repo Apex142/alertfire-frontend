@@ -1,9 +1,20 @@
 /* -------------------------------------------------------------------------- */
-/*  ⚠️  FICHIER CLIENT-ONLY : NE PAS L’importer dans un composant serveur     */
-/*      Pas de "use client" – on l’instancie via createAuthService()         */
+/*  ⚠️  FICHIER CLIENT-ONLY : NE PAS importer côté serveur                    */
 /* -------------------------------------------------------------------------- */
 
-import { Timestamp, serverTimestamp } from "firebase/firestore";
+import { Capacitor } from "@capacitor/core";
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  updateProfile,
+  sendPasswordResetEmail as webSendReset,
+  signOut as webSignOut,
+  User as WebUser,
+} from "firebase/auth";
+import { serverTimestamp, Timestamp } from "firebase/firestore";
 
 import type { IUserRepository } from "@/repositories/IUserRepository";
 import { UserRepository } from "@/repositories/UserRepository";
@@ -15,7 +26,21 @@ import { GlobalRole } from "@/types/enums/GlobalRole";
 import type { SignInResult } from "@capacitor-firebase/authentication";
 
 /* -------------------------------------------------------------------------- */
-/* Types Firebase Capacitor                                                   */
+/* Helper natif : charge le plugin uniquement sur MOBILE                      */
+/* -------------------------------------------------------------------------- */
+const isNative = Capacitor.isNativePlatform();
+let Native: typeof import("@capacitor-firebase/authentication").FirebaseAuthentication;
+
+async function loadNative() {
+  if (!isNative) return;
+  if (!Native) {
+    const mod = await import("@capacitor-firebase/authentication");
+    Native = mod.FirebaseAuthentication;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Types                                                                       */
 /* -------------------------------------------------------------------------- */
 type CapacitorUser = {
   uid: string;
@@ -23,248 +48,195 @@ type CapacitorUser = {
   displayName?: string | null;
   photoUrl?: string | null;
 };
+type AnyFBUser = WebUser | CapacitorUser;
 
 export interface AuthResult {
-  userCredential: SignInResult;
+  userCredential: SignInResult | { user: WebUser };
   appUser: AppUser | null;
   session: Session | null;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Helper : import dynamique du plugin natif                                  */
-/* -------------------------------------------------------------------------- */
-async function loadNativeAuth() {
-  const mod = await import("@capacitor-firebase/authentication");
-  return mod.FirebaseAuthentication;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Classe principale                                                          */
+/* Classe                                                                      */
 /* -------------------------------------------------------------------------- */
 export class AuthService {
-  constructor(private userRepository: IUserRepository = new UserRepository()) {}
+  private repo: IUserRepository;
+  private webAuth = getAuth();
 
-  /* ------------ 1. Création / mise à jour du document utilisateur ---------- */
-  private async upsertUserDocument(
-    firebaseUser: CapacitorUser | null,
-    additional: Partial<
-      Omit<
-        AppUser,
-        | "uid"
-        | "createdAt"
-        | "updatedAt"
-        | "lastLogin"
-        | "globalRole"
-        | "onboardingStep"
-        | "onboardingCompleted"
-        | "preferences"
-      >
-    > = {}
-  ): Promise<AppUser | null> {
-    if (!firebaseUser?.uid) return null;
+  constructor(repo: IUserRepository = new UserRepository()) {
+    this.repo = repo;
+  }
 
-    let user = await this.userRepository.findById(firebaseUser.uid);
+  /* ---------- 1. Upsert utilisateur Firestore ---------------------------- */
+  private async upsert(
+    fbUser: AnyFBUser,
+    extra: Partial<AppUser> = {}
+  ): Promise<AppUser> {
     const now = serverTimestamp() as Timestamp;
+    let user = await this.repo.findById(fbUser.uid);
+
+    const base = {
+      email: "email" in fbUser ? fbUser.email ?? "" : "",
+      displayName:
+        ("displayName" in fbUser ? fbUser.displayName : "") ||
+        extra.displayName ||
+        "",
+      photoURL:
+        "photoUrl" in fbUser ? fbUser.photoUrl ?? null : fbUser.photoURL,
+      lastLogin: now,
+      ...extra,
+    };
 
     if (!user) {
-      user = await this.createDefaultProfile(firebaseUser, additional);
+      user = await this.repo.create(
+        {
+          ...base,
+          globalRole: [GlobalRole.USER],
+          onboardingStep: 1,
+          onboardingCompleted: false,
+          preferences: { theme: "light", language: "fr", notifications: true },
+        },
+        fbUser.uid
+      );
     } else {
-      const updates: Partial<AppUser> = {
-        lastLogin: now,
-        updatedAt: now,
-        ...(firebaseUser.displayName &&
-          firebaseUser.displayName !== user.displayName && {
-            displayName: firebaseUser.displayName,
-          }),
-        ...(firebaseUser.photoUrl &&
-          firebaseUser.photoUrl !== user.photoURL && {
-            photoURL: firebaseUser.photoUrl,
-          }),
-      };
-
-      if (Object.keys(updates).length) {
-        user = await this.userRepository.update(firebaseUser.uid, updates);
-      }
+      user = await this.repo.update(fbUser.uid, { ...base, updatedAt: now });
     }
     return user;
   }
 
-  /* ------------ 2. Profil par défaut (appelé par upsert) ------------------- */
-  async createDefaultProfile(
-    firebaseUser: CapacitorUser,
-    additional: Partial<AppUser> = {}
-  ): Promise<AppUser> {
-    const now = serverTimestamp() as Timestamp;
-
-    const newUser: Omit<AppUser, "uid" | "createdAt" | "updatedAt"> = {
-      email: firebaseUser.email || "",
-      displayName:
-        additional.displayName ||
-        firebaseUser.displayName ||
-        firebaseUser.email?.split("@")[0] ||
-        "Nouvel utilisateur",
-      photoURL: firebaseUser.photoUrl || null,
-      firstName: additional.firstName || "",
-      lastName: additional.lastName || "",
-      globalRole: [GlobalRole.USER],
-      onboardingStep: 1,
-      onboardingCompleted: false,
-      preferences: { theme: "light", language: "fr", notifications: true },
-      lastLogin: now,
-      fullAddress: additional.fullAddress || "",
-      legalStatus: additional.legalStatus || "",
-      phone: additional.phone || "",
-      position: additional.position || "",
-      intent: additional.intent || "",
-      companies: additional.companies || [],
-      companySelected: additional.companySelected || null,
-      favoriteLocationIds: additional.favoriteLocationIds || [],
-    };
-
-    return await this.userRepository.create(newUser, firebaseUser.uid);
+  /* ---------- 2. Factorisation post-login -------------------------------- */
+  private async afterLogin(
+    fbUser: AnyFBUser,
+    cred: SignInResult | { user: WebUser }
+  ): Promise<AuthResult> {
+    const appUser = await this.upsert(fbUser);
+    const device =
+      typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
+    const session = await sessionService.createSession({
+      uid: fbUser.uid,
+      device,
+    });
+    return { userCredential: cred, appUser, session };
   }
 
-  /* ---------------- 3. Authentification (Google, email) -------------------- */
+  /* ---------- 3. Auth – Google provider ---------------------------------- */
   async signInWithProvider(provider: AuthProviderType): Promise<AuthResult> {
-    const FirebaseAuthentication = await loadNativeAuth();
+    if (provider !== AuthProviderType.GOOGLE)
+      throw new Error(`Provider ${provider} non supporté`);
 
-    let result: SignInResult;
-    switch (provider) {
-      case AuthProviderType.GOOGLE:
-        result = await FirebaseAuthentication.signInWithGoogle();
-        break;
-      default:
-        throw new Error(`Provider ${provider} non supporté.`);
+    if (isNative) {
+      await loadNative();
+      const res = await Native.signInWithGoogle();
+      return this.afterLogin(res.user!, res);
     }
 
-    const firebaseUser = result.user!;
-    const appUser = await this.upsertUserDocument(firebaseUser);
-    const device =
-      typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
-
-    const session = await sessionService.createSession({
-      uid: firebaseUser.uid,
-      device,
-    });
-
-    return { userCredential: result, appUser, session };
+    const { user } = await signInWithPopup(
+      this.webAuth,
+      new GoogleAuthProvider()
+    );
+    return this.afterLogin(user, { user });
   }
 
+  /* ---------- 4. Auth – email / password --------------------------------- */
   async signInUser(email: string, password: string): Promise<AuthResult> {
-    const FirebaseAuthentication = await loadNativeAuth();
-    const result = await FirebaseAuthentication.signInWithEmailAndPassword({
+    if (isNative) {
+      await loadNative();
+      const res = await Native.signInWithEmailAndPassword({ email, password });
+      return this.afterLogin(res.user!, res);
+    }
+    const { user } = await signInWithEmailAndPassword(
+      this.webAuth,
       email,
-      password,
-    });
-
-    const firebaseUser = result.user!;
-    const appUser = await this.upsertUserDocument(firebaseUser);
-    const device =
-      typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
-
-    const session = await sessionService.createSession({
-      uid: firebaseUser.uid,
-      device,
-    });
-
-    return { userCredential: result, appUser, session };
+      password
+    );
+    return this.afterLogin(user, { user });
   }
 
   async signUpUser(
     email: string,
     password: string,
-    additional: Partial<
-      Omit<
-        AppUser,
-        | "uid"
-        | "createdAt"
-        | "updatedAt"
-        | "lastLogin"
-        | "globalRole"
-        | "onboardingStep"
-        | "onboardingCompleted"
-        | "preferences"
-        | "email"
-        | "photoURL"
-      >
-    > = {}
+    extra: Partial<AppUser> = {}
   ): Promise<AuthResult> {
-    const FirebaseAuthentication = await loadNativeAuth();
-    const result = await FirebaseAuthentication.createUserWithEmailAndPassword({
-      email,
-      password,
-    });
-
-    const firebaseUser = result.user!;
-    const displayName = `${additional.firstName || ""} ${
-      additional.lastName || ""
-    }`.trim();
-    if (displayName) {
-      await FirebaseAuthentication.updateProfile({ displayName });
+    if (isNative) {
+      await loadNative();
+      const res = await Native.createUserWithEmailAndPassword({
+        email,
+        password,
+      });
+      const dn = `${extra.firstName ?? ""} ${extra.lastName ?? ""}`.trim();
+      if (dn) await Native.updateProfile({ displayName: dn });
+      return this.afterLogin(res.user!, res);
     }
 
-    const appUser = await this.upsertUserDocument(firebaseUser, {
-      displayName: displayName || undefined,
-      ...additional,
-    });
-
-    const device =
-      typeof window !== "undefined" ? navigator.userAgent : "unknown_device";
-
-    const session = await sessionService.createSession({
-      uid: firebaseUser.uid,
-      device,
-    });
-
-    return { userCredential: result, appUser, session };
+    const { user } = await createUserWithEmailAndPassword(
+      this.webAuth,
+      email,
+      password
+    );
+    const dn = `${extra.firstName ?? ""} ${extra.lastName ?? ""}`.trim();
+    if (dn) await updateProfile(user, { displayName: dn });
+    return this.afterLogin(user, { user });
   }
 
-  /* ---------------- 4. Déconnexion / Reset / Multi-devices ----------------- */
+  /* ---------- 5. Déconnexion & reset ------------------------------------- */
   async signOutUser(sessionId?: string) {
-    const FirebaseAuthentication = await loadNativeAuth();
     if (sessionId) await sessionService.revokeSession(sessionId);
-    await FirebaseAuthentication.signOut();
+    if (isNative) {
+      await loadNative();
+      return Native.signOut();
+    }
+    return webSignOut(this.webAuth);
   }
 
   async signOutAllDevices(uid: string) {
-    const FirebaseAuthentication = await loadNativeAuth();
     await sessionService.revokeAllSessions(uid);
-    await FirebaseAuthentication.signOut();
+    if (isNative) {
+      await loadNative();
+      return Native.signOut();
+    }
+    return webSignOut(this.webAuth);
   }
 
   async sendPasswordReset(email: string) {
-    const FirebaseAuthentication = await loadNativeAuth();
-    await FirebaseAuthentication.sendPasswordResetEmail({ email });
+    if (isNative) {
+      await loadNative();
+      return Native.sendPasswordResetEmail({ email });
+    }
+    return webSendReset(this.webAuth, email);
   }
 
-  /* ---------------- 5. Profil utils --------------------------------------- */
+  /* ---------- 6. Profil utils -------------------------------------------- */
   getAppUserProfile(uid: string) {
-    return this.userRepository.findById(uid);
+    return this.repo.findById(uid);
   }
 
   updateUserProfileData(userId: string, data: Partial<AppUser>) {
-    return this.userRepository.update(userId, {
+    return this.repo.update(userId, {
       ...data,
       updatedAt: serverTimestamp() as Timestamp,
     });
   }
 
   async deleteCurrentUserAccount(sessionId?: string) {
-    const FirebaseAuthentication = await loadNativeAuth();
-    const { user } = await FirebaseAuthentication.getCurrentUser();
-    if (!user) throw new Error("Aucun utilisateur connecté.");
+    if (isNative) {
+      await loadNative();
+      const { user } = await Native.getCurrentUser();
+      if (!user) throw new Error("Aucun utilisateur connecté.");
+      if (sessionId) await sessionService.revokeSession(sessionId);
+      await this.repo.delete(user.uid);
+      return Native.deleteUser();
+    }
 
+    const user = this.webAuth.currentUser;
+    if (!user) throw new Error("Aucun utilisateur connecté.");
     if (sessionId) await sessionService.revokeSession(sessionId);
-    await this.userRepository.delete(user.uid);
-    await FirebaseAuthentication.deleteUser();
+    await this.repo.delete(user.uid);
+    return user.delete();
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Factory : instance unique, null côté serveur                               */
-/* -------------------------------------------------------------------------- */
+/* ---------- 7. Factory unique ------------------------------------------- */
 let _instance: AuthService | null = null;
-
 export async function createAuthService(): Promise<AuthService | null> {
   if (typeof window === "undefined") return null;
   if (!_instance) _instance = new AuthService();

@@ -1,19 +1,18 @@
 import { Capacitor } from "@capacitor/core";
 import type { IAuthClient } from "./IAuthClient";
+import { NativeAuthClient } from "./NativeAuthClient";
+import { WebAuthClient } from "./WebAuthClient";
 
-/**
- * Fabrique d’authClient – à appeler dans le navigateur.
- *
- * ⚠️  Renvoie `null` côté serveur pour éviter tout accès à `window`.
- */
-export async function createAuthClient(): Promise<IAuthClient | null> {
-  if (typeof window === "undefined") return null; // SSR safety ✅
+let _client: IAuthClient | null = null;
 
-  if (Capacitor.isNativePlatform()) {
-    const { NativeAuthClient } = await import("./NativeAuthClient");
-    return new NativeAuthClient();
-  }
+/** Retourne toujours la même instance (sync). */
+export function createAuthClient(): IAuthClient | null {
+  if (_client) return _client;
 
-  const { WebAuthClient } = await import("./WebAuthClient");
-  return new WebAuthClient();
+  if (typeof window === "undefined") return null; // SSR safety
+  _client = Capacitor.isNativePlatform()
+    ? new NativeAuthClient()
+    : new WebAuthClient();
+
+  return _client;
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { createAuthClient } from "@/lib/auth/AuthClientFactory";
+import { createAuthClient } from "@/lib/auth/AuthClientFactory"; // ⬅️ sync
 import { AnyFirebaseUser } from "@/lib/auth/IAuthClient";
 import { db } from "@/lib/firebase/client";
-import { createAuthService } from "@/services/AuthService"; // version dynamique ici !
+import { createAuthService } from "@/services/AuthService"; // async factory
 import { sessionService } from "@/services/SessionService";
 import type { Session } from "@/types/entities/Session";
 import type { User as AppUser } from "@/types/entities/User";
@@ -30,7 +30,6 @@ interface AuthContextType {
 }
 
 const SESSION_ID_STORAGE_KEY = "sessionId";
-
 const AuthContext = createContext<AuthContextType>({
   firebaseUser: null,
   appUser: null,
@@ -41,25 +40,27 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  /* ------------------------------- state -------------------------------- */
   const [firebaseUser, setFirebaseUser] = useState<AnyFirebaseUser>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const currentSessionIdRef = useRef<string | null>(null);
 
-  const userDocListenerUnsubscribeRef = useRef<Unsubscribe | null>(null);
-  const sessionDocListenerUnsubscribeRef = useRef<Unsubscribe | null>(null);
+  const userDocListenerRef = useRef<Unsubscribe | null>(null);
+  const sessionDocListenerRef = useRef<Unsubscribe | null>(null);
   const authServiceRef = useRef<Awaited<
     ReturnType<typeof createAuthService>
   > | null>(null);
 
-  /* Chargement dynamique de authService */
+  /* -------------------- charge AuthService une fois -------------------- */
   useEffect(() => {
     createAuthService().then((service) => {
       authServiceRef.current = service;
     });
   }, []);
 
+  /* --------- synchronise localStorage <-> state sessionId -------------- */
   useEffect(() => {
     const id = localStorage.getItem(SESSION_ID_STORAGE_KEY);
     setCurrentSessionId(id);
@@ -75,17 +76,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentSessionId]);
 
+  /* -------------------------- helpers ---------------------------------- */
   const clearListeners = useCallback(() => {
-    userDocListenerUnsubscribeRef.current?.();
-    sessionDocListenerUnsubscribeRef.current?.();
-    userDocListenerUnsubscribeRef.current = null;
-    sessionDocListenerUnsubscribeRef.current = null;
+    userDocListenerRef.current?.();
+    sessionDocListenerRef.current?.();
+    userDocListenerRef.current = null;
+    sessionDocListenerRef.current = null;
   }, []);
 
   const performLogout = useCallback(
     async (reason?: string, forceSessionId?: string | null) => {
       setLoading(true);
       clearListeners();
+
       const authService = authServiceRef.current;
       const sessionId = forceSessionId ?? currentSessionIdRef.current;
 
@@ -95,13 +98,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else if (reason?.includes("banned")) {
           toast.error("Votre compte a été banni.");
         } else if (reason && reason !== "Manual user logout") {
-          toast.info("Déconnexion : " + reason);
+          toast.info(`Déconnexion : ${reason}`);
         }
 
         if (sessionId) {
           await fetch(`/api/session/${sessionId}/delete`, { method: "POST" });
         }
-
         if (authService) {
           await authService.signOutUser(sessionId ?? undefined);
         }
@@ -116,125 +118,118 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setCurrentSessionId(null);
         currentSessionIdRef.current = null;
         localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-      } catch (e) {
-        console.error("performLogout error:", e);
+      } catch (err) {
+        console.error("performLogout error:", err);
       }
-
       setLoading(false);
     },
     [clearListeners]
   );
 
+  /* ------------------------ auth listener ------------------------------ */
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
+    /* createAuthClient est SYNCHRONE */
+    const authClient = createAuthClient();
+    if (!authClient) return; // SSR safety
 
-    createAuthClient().then((authClient) => {
-      if (!authClient) return;
+    const unsubscribe = authClient.addAuthListener(async (user) => {
+      setLoading(true);
+      clearListeners();
 
-      unsubscribe = authClient.addAuthListener(async (user) => {
-        setLoading(true);
-        clearListeners();
+      if (!user) {
+        setFirebaseUser(null);
+        setAppUser(null);
+        setCurrentSessionId(null);
+        currentSessionIdRef.current = null;
+        localStorage.removeItem(SESSION_ID_STORAGE_KEY);
+        await fetch("/api/auth/session", {
+          method: "POST",
+          body: JSON.stringify({ action: "logout" }),
+        }).catch(() => {});
+        setLoading(false);
+        return;
+      }
 
-        if (!user) {
-          setFirebaseUser(null);
-          setAppUser(null);
-          setCurrentSessionId(null);
-          currentSessionIdRef.current = null;
-          localStorage.removeItem(SESSION_ID_STORAGE_KEY);
-          await fetch("/api/auth/session", {
-            method: "POST",
-            body: JSON.stringify({ action: "logout" }),
-          }).catch(() => {});
-          setLoading(false);
+      setFirebaseUser(user);
+
+      try {
+        const authService = authServiceRef.current;
+        if (!authService) return;
+
+        let appUser = await authService.getAppUserProfile(user.uid);
+        if (!appUser) {
+          appUser = await authService.createDefaultProfile(user);
+          toast.success("Profil utilisateur créé automatiquement.");
+        }
+
+        if (appUser.isBanned) {
+          await performLogout("User is banned");
           return;
         }
 
-        setFirebaseUser(user);
+        setAppUser(appUser);
 
-        try {
-          const authService = authServiceRef.current;
-          if (!authService) return;
+        const sessions = await sessionService.getUserSessions(user.uid);
+        const active =
+          sessions
+            ?.filter((s) => !s.revoked)
+            .sort(
+              (a, b) =>
+                (b.createdAt?.toMillis?.() ?? 0) -
+                (a.createdAt?.toMillis?.() ?? 0)
+            )[0] ?? null;
 
-          let appUser = await authService.getAppUserProfile(user.uid);
-          if (!appUser) {
-            appUser = await authService.createDefaultProfile(user);
-            toast.success("Profil utilisateur créé automatiquement.");
-          }
+        setSessionDetailsAction(appUser, active);
 
-          if (appUser.isBanned) {
-            await performLogout("User is banned");
-            return;
-          }
-
-          setAppUser(appUser);
-
-          const sessions = await sessionService.getUserSessions(user.uid);
-          const active =
-            sessions
-              ?.filter((s) => !s.revoked)
-              .sort(
-                (a, b) =>
-                  (b.createdAt?.toMillis?.() ?? 0) -
-                  (a.createdAt?.toMillis?.() ?? 0)
-              )[0] ?? null;
-
-          setSessionDetailsAction(appUser, active);
-
-          userDocListenerUnsubscribeRef.current = onSnapshot(
-            doc(db, "users", user.uid),
-            async (snapshot) => {
-              if (!snapshot.exists()) {
-                await performLogout("User document deleted from Firestore");
-                return;
-              }
-              const updated = snapshot.data() as AppUser;
-              setAppUser(updated);
-              if (updated.isBanned) {
-                await performLogout("User dynamically banned");
-              }
-            },
-            async () => {
-              await performLogout("Error listening to user document");
+        userDocListenerRef.current = onSnapshot(
+          doc(db, "users", user.uid),
+          async (snap) => {
+            if (!snap.exists()) {
+              await performLogout("User document deleted from Firestore");
+              return;
             }
-          );
+            const updated = snap.data() as AppUser;
+            setAppUser(updated);
+            if (updated.isBanned)
+              await performLogout("User dynamically banned");
+          },
+          async () => await performLogout("Error listening to user document")
+        );
 
-          const token = await authClient.getIdToken();
-          if (token) {
-            await fetch("/api/auth/session", {
-              method: "POST",
-              body: JSON.stringify({ action: "login", token }),
-            }).catch(() => {});
-          }
-        } catch (err) {
-          console.error("Auth init error:", err);
-          toast.error("Erreur lors de l'initialisation de la session.");
-          await performLogout("Auth init error");
+        const token = await authClient.getIdToken();
+        if (token) {
+          await fetch("/api/auth/session", {
+            method: "POST",
+            body: JSON.stringify({ action: "login", token }),
+          }).catch(() => {});
         }
-
-        setLoading(false);
-      });
+      } catch (err) {
+        console.error("Auth init error:", err);
+        toast.error("Erreur lors de l'initialisation de la session.");
+        await performLogout("Auth init error");
+      }
+      setLoading(false);
     });
 
     return () => {
-      unsubscribe?.();
+      unsubscribe();
       clearListeners();
     };
   }, [performLogout, clearListeners]);
 
+  /* ---------------------- session listener ----------------------------- */
   useEffect(() => {
-    if (sessionDocListenerUnsubscribeRef.current) {
-      sessionDocListenerUnsubscribeRef.current();
-    }
+    if (sessionDocListenerRef.current) sessionDocListenerRef.current();
 
     if (currentSessionId && appUser && firebaseUser) {
-      sessionDocListenerUnsubscribeRef.current = onSnapshot(
+      sessionDocListenerRef.current = onSnapshot(
         doc(db, "sessions", currentSessionId),
-        async (snapshot) => {
-          if (!snapshot.exists()) {
+        async (snap) => {
+          if (!snap.exists()) {
             await performLogout("Session document deleted remotely");
             return;
           }
-          const session = snapshot.data() as Session;
+          const session = snap.data() as Session;
           if (session.uid !== appUser.uid) {
             await performLogout("Session UID mismatch");
             return;
@@ -247,16 +242,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await performLogout("Session expired");
           }
         },
-        async () => {
-          await performLogout("Error listening to session document");
-        }
+        async () => await performLogout("Error listening to session document")
       );
     }
-    return () => {
-      sessionDocListenerUnsubscribeRef.current?.();
-    };
+    return () => sessionDocListenerRef.current?.();
   }, [currentSessionId, appUser, firebaseUser, performLogout]);
 
+  /* -------------------- setter centralisé ------------------------------ */
   const setSessionDetailsAction = (
     user: AppUser | null,
     session: Session | null
@@ -271,18 +263,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  /* ----------------- fallback si profil introuvable -------------------- */
   if (!loading && firebaseUser && !appUser) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
+      <div className="flex h-screen flex-col items-center justify-center bg-background text-foreground">
         <p className="mb-4 text-lg font-semibold">
           Profil utilisateur introuvable.
         </p>
         <p className="mb-6 text-sm text-muted-foreground">
-          Veuillez contacter le support, réessayer plus tard, ou vous
-          déconnecter ci-dessous.
+          Veuillez contacter le support, réessayer plus tard ou vous déconnecter
+          ci-dessous.
         </p>
         <button
-          className="px-4 py-2 bg-primary text-white rounded"
+          className="rounded bg-primary px-4 py-2 text-white"
           onClick={() => performLogout("Manual logout from fallback")}
         >
           Se déconnecter
@@ -291,6 +284,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
   }
 
+  /* ------------------------------- UI ---------------------------------- */
   return (
     <AuthContext.Provider
       value={{
@@ -299,10 +293,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         currentSessionId,
         logout: (reason?: string) =>
-          performLogout(
-            reason || "Manual user logout",
-            currentSessionIdRef.current
-          ),
+          performLogout(reason || "Manual user logout"),
         setSessionDetails: setSessionDetailsAction,
       }}
     >
