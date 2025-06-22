@@ -91,7 +91,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (sessionId) {
-          await fetch(`/api/session/${sessionId}/delete`, { method: "POST" });
+          await fetch(`/api/auth/session/${sessionId}/delete`, {
+            method: "POST",
+          });
         }
 
         if (authService) {
