@@ -2,7 +2,7 @@
 
 **AlertFire** est une plateforme web et embarquée dédiée à la **détection rapide des départs de feu en milieu naturel** et à la **coordination des interventions**.
 
-Le système s'appuie sur des **capteurs physiques (Arduino + capteur de flamme + module LoRa)** déployés sur les arbres, un **modèle d'IA embarqué**, et une **interface web de supervision** pour visualiser en temps réel les alertes, les emplacements et l’évolution du feu.
+Le système s'appuie sur des **capteurs physiques (ESP32 + capteur de flamme + module LoRa)** déployés sur les arbres, par faute de budget un simulateur est réalisé, un **modèle d'IA**, et une **interface web de supervision** pour visualiser en temps réel les alertes, les emplacements et l’évolution du feu.
 
 ---
 
@@ -20,19 +20,16 @@ Le système s'appuie sur des **capteurs physiques (Arduino + capteur de flamme +
 - **Historique & traçabilité des incendies**  
   Accédez aux historiques d’alertes, journaux de propagation et réponses.
 
-- **Gestion des équipes & des interventions**  
-  Assignez des équipes, suivez les actions, localisez les points d'accès critiques.
-
 ---
 
 ## 🧠 Architecture technique
 
-- **Systèmes embarqués** : Arduino Nano, capteur de flamme, module LoRa E32, IA embarquée avec quantization
+- **Systèmes embarqués** : ESP32, capteur de flamme, module LoRa E32, IA (server)
 - **Backend IA** : Python + scikit-learn (modèle d’apprentissage supervisé léger)
 - **Frontend** : Next.js + React + Tailwind CSS + Framer Motion
 - **Backend Web** : Node.js (API), Firebase (auth, base, stockage)
 - **Communication** : Sérialisation JSON, protocole LoRa optimisé, traitement distribué
-- **Déploiement** : Vercel (web), Firebase Hosting, microcontrôleurs autonomes
+- **Déploiement** : Vercel (web), Firebase Hosting
 
 ---
 
@@ -47,13 +44,13 @@ Détecter et **signaler automatiquement un départ de feu en moins de 3 secondes
 > ✅ Détection embarquée  
 > ✅ Communication inter-arbres  
 > ✅ Carte temps réel (frontend)  
-> 🚧 Backend coordination multi-zones  
-> 🚧 Simulation propagation + alertes en masse  
-> 🚧 Interface mobile
+> ✅ Backend coordination multi-zones  
+> ✅ Simulation propagation + alertes en masse  
+> ✅ Interface mobile
 
 ---
 
 ## 👨‍💻 Auteurs
 
 Projet développé par **Mehdi Martin** et l’équipe AlertFire – Université Aix-Marseille  
-Licence 3 Informatique – Projet Système Distribué & IA embarquée
+Licence 3 Informatique – Projet Système Distribué & IA
