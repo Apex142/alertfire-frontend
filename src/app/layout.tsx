@@ -30,9 +30,6 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Providers>
-            {/* ---------------------------------------------------------------- */}
-            {/*  Tout ce qui doit réagir au “pull-to-refresh” est placé DEDANS   */}
-            {/* ---------------------------------------------------------------- */}
             <Toaster position="top-right" richColors />
             <Navbar />
             {children}
