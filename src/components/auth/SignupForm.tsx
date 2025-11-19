@@ -2,9 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
-import { motion } from "framer-motion";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -12,8 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
 import { notify } from "@/lib/notify";
-import type { AuthService } from "@/services/AuthService";
-import { createAuthService } from "@/services/AuthService";
+import { useAuthService } from "@/hooks/useAuthService";
 import { AuthProviderType } from "@/types/enums/AuthProvider";
 
 /* -------------------- Schéma Zod -------------------- */
@@ -43,7 +41,7 @@ interface Props {
 export default function SignupForm({ onSwitchToLogin }: Props) {
   const { setSessionDetails } = useAuth();
   const [submitError, setSubmitError] = useState("");
-  const [authService, setAuthService] = useState<AuthService | null>(null);
+  const { authService, loading: authServiceLoading } = useAuthService();
 
   const {
     register,
@@ -53,32 +51,35 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
     resolver: zodResolver(signupSchema),
   });
 
-  useEffect(() => {
-    createAuthService().then(setAuthService);
-  }, []);
+  const isBusy = useMemo(
+    () => isSubmitting || authServiceLoading || !authService,
+    [authService, authServiceLoading, isSubmitting]
+  );
 
-  const onSubmit = async (data: SignupFormData) => {
-    setSubmitError("");
-    try {
+  const onSubmit = useCallback(
+    async (data: SignupFormData) => {
       if (!authService) return;
-
-      const { appUser, session } = await authService.signUpUser(
-        data.email,
-        data.password
-      );
-      if (appUser && session) {
-        setSessionDetails(appUser, session);
-        notify.success("Inscription réussie !");
+      setSubmitError("");
+      try {
+        const { appUser, session } = await authService.signUpUser(
+          data.email,
+          data.password
+        );
+        if (appUser && session) {
+          setSessionDetails(appUser, session);
+          notify.success("Inscription réussie !");
+        }
+      } catch (e) {
+        setSubmitError(firebaseMessage(e));
       }
-    } catch (e) {
-      setSubmitError(firebaseMessage(e));
-    }
-  };
+    },
+    [authService, setSessionDetails]
+  );
 
-  const signInGoogle = async () => {
+  const signInGoogle = useCallback(async () => {
+    if (!authService) return;
     try {
       setSubmitError("");
-      if (!authService) return;
 
       const { appUser, session } = await authService.signInWithProvider(
         AuthProviderType.GOOGLE
@@ -90,15 +91,10 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
     } catch (e) {
       setSubmitError(firebaseMessage(e));
     }
-  };
+  }, [authService, setSessionDetails]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="w-full max-w-md rounded-xl bg-card p-6 shadow-lg dark:bg-gray-800/70"
-    >
+    <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-lg transition-transform duration-200 ease-out will-change-transform dark:bg-gray-800/70">
       <div className="mb-6 text-center space-y-2">
         <Image
           src="/images/AlertFire.png"
@@ -144,8 +140,8 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
           <p className="text-sm text-destructive">{submitError}</p>
         )}
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Inscription..." : "S’inscrire"}
+        <Button type="submit" className="w-full" disabled={isBusy}>
+          {isBusy ? "Inscription..." : "S’inscrire"}
         </Button>
       </form>
 
@@ -159,7 +155,7 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
         variant="secondary"
         className="w-full gap-2"
         onClick={signInGoogle}
-        disabled={isSubmitting}
+        disabled={isBusy}
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>
           <path
@@ -189,12 +185,12 @@ export default function SignupForm({ onSwitchToLogin }: Props) {
             variant="primary"
             size="sm"
             onClick={onSwitchToLogin}
-            disabled={isSubmitting}
+            disabled={isBusy}
           >
             Se connecter
           </Button>
         </p>
       )}
-    </motion.div>
+    </div>
   );
 }

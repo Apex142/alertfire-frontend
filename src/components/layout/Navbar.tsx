@@ -26,7 +26,12 @@ import { useEffect, useRef, useState } from "react";
 import NotificationButton from "./NotificationButton";
 
 export default function Navbar() {
-  const { appUser, logout, loading: authLoading } = useAuth();
+  const {
+    appUser,
+    firebaseUser,
+    logout,
+    loading: authLoading,
+  } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,6 +43,9 @@ export default function Navbar() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   const isActive = (href: string) =>
     href === "/" ? pathname === href : pathname.startsWith(href);
+  const isAuthenticated = Boolean(appUser || firebaseUser);
+  const showLoginButton = !authLoading && !isAuthenticated;
+  const showUserMenu = !authLoading && Boolean(appUser);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -67,36 +75,38 @@ export default function Navbar() {
         </Link>
 
         {/* NAVIGATION (desktop) */}
-        <div className="hidden md:flex items-center gap-6 justify-center flex-1">
-          <NavLink
-            href="/"
-            label="Carte"
-            icon={<MapPin className="w-4 h-4" />}
-            active={isActive("/")}
-          />
-          <NavLink
-            href="/dashboard"
-            label="Tableau de bord"
-            icon={<LayoutDashboard className="w-4 h-4" />}
-            active={isActive("/dashboard")}
-          />
-          <NavLink
-            href="/sensors"
-            label="Capteurs"
-            icon={<Users className="w-4 h-4" />}
-            active={isActive("/sensors")}
-          />
-          <NavLink
-            href="/alerts"
-            label="Alertes"
-            icon={<AlertTriangle className="w-4 h-4" />}
-            active={isActive("/alerts")}
-          />
-        </div>
+        {isAuthenticated && (
+          <div className="hidden md:flex items-center gap-6 justify-center flex-1">
+            <NavLink
+              href="/"
+              label="Carte"
+              icon={<MapPin className="w-4 h-4" />}
+              active={isActive("/")}
+            />
+            <NavLink
+              href="/dashboard"
+              label="Tableau de bord"
+              icon={<LayoutDashboard className="w-4 h-4" />}
+              active={isActive("/dashboard")}
+            />
+            <NavLink
+              href="/sensors"
+              label="Capteurs"
+              icon={<Users className="w-4 h-4" />}
+              active={isActive("/sensors")}
+            />
+            <NavLink
+              href="/alerts"
+              label="Alertes"
+              icon={<AlertTriangle className="w-4 h-4" />}
+              active={isActive("/alerts")}
+            />
+          </div>
+        )}
 
         {/* ACTIONS (notifications, thème, auth) */}
         <div className="flex items-center gap-3">
-          <NotificationButton />
+          {isAuthenticated && <NotificationButton />}
 
           {/* Dark mode toggle */}
           <button
@@ -116,14 +126,14 @@ export default function Navbar() {
             <div className="w-8 h-8 flex items-center justify-center">
               <Loader2 className="animate-spin w-5 h-5 text-muted-foreground" />
             </div>
-          ) : !appUser ? (
+          ) : showLoginButton ? (
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => router.push("/")}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90"
             >
               <LogIn className="w-4 h-4" /> Connexion
             </button>
-          ) : (
+          ) : showUserMenu && appUser ? (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -177,12 +187,12 @@ export default function Navbar() {
                 </motion.div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </nav>
 
       {/* NAVIGATION (mobile) */}
-      {appUser && (
+      {isAuthenticated && (
         <div className="fixed bottom-0 w-full flex justify-around bg-background border-t border-border py-2 z-[99999] md:hidden text-foreground">
           <MobileLink
             href="/"

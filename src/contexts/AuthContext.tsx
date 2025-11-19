@@ -52,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     null
   );
   const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const firebaseUserRef = useRef<AnyFirebaseUser | null>(null);
+  const appUserRef = useRef<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   /* session courante  ----------------------------------------------------- */
@@ -67,6 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /* listeners Firestore ---------------------------------------------------- */
   const userDocListenerRef = useRef<Unsubscribe | null>(null);
   const sessionDocListenerRef = useRef<Unsubscribe | null>(null);
+
+  useEffect(() => {
+    firebaseUserRef.current = firebaseUser;
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    appUserRef.current = appUser;
+  }, [appUser]);
 
   /* ----------------------------------------------------------------------- */
   /*  Boot – charge AuthService + lit localStorage                           */
@@ -105,6 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const sessionId = forceSessionId ?? currentSessionIdRef.current;
       const authService = authServiceRef.current;
+      const hadFirebaseUser = firebaseUserRef.current;
+      const shouldSignOut = Boolean(
+        (forceSessionId ?? sessionId) || hadFirebaseUser
+      );
 
       /* feedback ---------------------------------------------------------- */
       if (/expired|revoked/.test(reason)) toast.warning("Session expirée.");
@@ -120,7 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       /* 2️⃣  Firebase sign-out ------------------------------------------ */
-      await authService?.signOutUser().catch(() => {});
+      if (shouldSignOut) {
+        await authService?.signOutUser(sessionId ?? undefined).catch(() => {});
+      }
 
       /* 3️⃣  Nettoie le cookie httpOnly ---------------------------------- */
       await fetch("/api/auth/session", {
@@ -130,7 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       /* 4️⃣  Reset local -------------------------------------------------- */
       setFirebaseUser(null);
+      firebaseUserRef.current = null;
       setAppUser(null);
+      appUserRef.current = null;
       setCurrentSessionId(null);
       currentSessionIdRef.current = null;
       localStorage.removeItem(SESSION_ID_STORAGE_KEY);
@@ -143,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setSessionDetails = useCallback(
     (user: AppUser | null, session: Session | null) => {
       setAppUser(user);
+      appUserRef.current = user;
       setCurrentSessionId(session?.sessionId ?? null);
       currentSessionIdRef.current = session?.sessionId ?? null;
 
@@ -163,9 +182,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!serviceReady) return;
 
     const authClient = createAuthClient();
-    if (!authClient) return;
+    if (!authClient) {
+      setLoading(false);
+      return;
+    }
 
     const unsubscribe = authClient.addAuthListener(async (user) => {
+      const hadExistingState = Boolean(
+        firebaseUserRef.current ||
+          appUserRef.current ||
+          currentSessionIdRef.current
+      );
+
+      if (!user && !hadExistingState) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       clearListeners();
 
@@ -175,8 +208,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      /* B. User présent --------------------------------------------------- */
-      setFirebaseUser(user);
+  /* B. User présent --------------------------------------------------- */
+  setFirebaseUser(user);
+  firebaseUserRef.current = user;
 
       try {
         const authService = authServiceRef.current!;
@@ -191,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setAppUser(profile);
+        appUserRef.current = profile;
 
         /* session la + récente non révoquée -------------------------------- */
         const sessions = await sessionService.getUserSessions(user.uid);
@@ -211,6 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!snap.exists()) return performLogout("User doc deleted");
             const updated = snap.data() as AppUser;
             setAppUser(updated);
+            appUserRef.current = updated;
             if (updated.isBanned) await performLogout("User banned");
           },
           () => performLogout("User doc listener error")

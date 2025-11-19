@@ -12,16 +12,35 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { BrandLoader } from "@/components/ui/BrandLoader";
 import Banner from "@/components/ui/modal/Banner";
 import Dashboard from "./Dashboard";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import type { User as AppUser } from "@/types/entities/User";
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const { isAuthenticated, loading } = useRequireAuth();
   const { appUser, logout } = useAuth();
+
+  if (loading || !isAuthenticated || !appUser) {
+    return <BrandLoader message="Connexion à votre tableau de bord" />;
+  }
+
+  return <DashboardContent appUser={appUser} logout={logout} />;
+}
+
+function DashboardContent({
+  appUser,
+  logout,
+}: {
+  appUser: AppUser;
+  logout: (reason?: string) => Promise<void>;
+}) {
+  const router = useRouter();
 
   const isProfileIncomplete =
     !appUser?.firstName || !appUser?.lastName || !appUser?.email;

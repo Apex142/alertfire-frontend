@@ -5,6 +5,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -30,17 +31,23 @@ export class SessionRepository {
     await updateDoc(res, { sessionId: res.id });
 
     return {
-      ...(data as any),
+      ...data,
       sessionId: res.id,
       createdAt: now,
       lastActiveAt: now,
       revoked: false,
-    };
+    } as Session;
   }
 
-  async update(sessionId: string, data: Partial<Session>) {
+  async update(
+    sessionId: string,
+    data: Partial<Session>
+  ): Promise<Session | null> {
     const ref = doc(this.col, sessionId);
     await updateDoc(ref, { ...data, lastActiveAt: serverTimestamp() });
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return { sessionId: snap.id, ...snap.data() } as Session;
   }
 
   async findByUid(uid: string): Promise<Session[]> {

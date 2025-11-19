@@ -61,6 +61,8 @@ export interface AuthResult {
   session: Session;
 }
 
+const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 /* -------------------------------------------------------------------------- */
 /*  AuthService                                                               */
 /* -------------------------------------------------------------------------- */
@@ -134,11 +136,47 @@ export class AuthService {
 
     /* ①  essaie de réutiliser la session active du même device -------------- */
     const existing = await sessionService.getUserSessions(fbUser.uid);
-    const reuse = existing?.find((s) => !s.revoked && s.device === device);
+    const sameDeviceSessions = existing
+      .filter((s) => !s.revoked && s.device === device)
+      .sort(
+        (a, b) =>
+          (b.lastActiveAt?.toMillis?.() ?? 0) -
+          (a.lastActiveAt?.toMillis?.() ?? 0)
+      );
 
-    const session = reuse
-      ? await sessionService.updateActivity(reuse.sessionId!)
-      : await sessionService.createSession({ uid: fbUser.uid, device });
+    const now = Date.now();
+    const reusable = sameDeviceSessions.find((s) => {
+      const expiresAtMs = s.expiresAt?.toMillis?.() ?? 0;
+      return expiresAtMs > now;
+    });
+
+    if (!reusable) {
+      const expiredSessions = sameDeviceSessions.filter((s) => {
+        const expiresAtMs = s.expiresAt?.toMillis?.() ?? 0;
+        return expiresAtMs && expiresAtMs <= now;
+      });
+
+      if (expiredSessions.length > 0) {
+        await Promise.allSettled(
+          expiredSessions
+            .filter((s) => Boolean(s.sessionId))
+            .map((s) => sessionService.revokeSession(s.sessionId!))
+        );
+      }
+    }
+
+    let session: Session | null = null;
+
+    if (reusable?.sessionId) {
+      session = await sessionService.updateActivity(
+        reusable.sessionId,
+        SESSION_MAX_AGE_MS
+      );
+    }
+
+    if (!session) {
+      session = await sessionService.createSession({ uid: fbUser.uid, device });
+    }
 
     if (!session) {
       throw new Error(

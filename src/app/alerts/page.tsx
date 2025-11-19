@@ -1,8 +1,10 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
+import { BrandLoader } from "@/components/ui/BrandLoader";
 import { useFireAlerts } from "@/hooks/useFireAlerts";
 import { useProjects } from "@/hooks/useProjects";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import {
   CalendarClock,
   Flame,
@@ -15,6 +17,16 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
 export default function AlertsPage() {
+  const { isAuthenticated, loading } = useRequireAuth();
+
+  if (loading || !isAuthenticated) {
+    return <BrandLoader message="Chargement du centre d’alertes" />;
+  }
+
+  return <AlertsContent />;
+}
+
+function AlertsContent() {
   const router = useRouter();
 
   /* données temps réel */

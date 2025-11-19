@@ -4,6 +4,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { motion } from "framer-motion";
 import { Bell } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * NotificationButton
@@ -14,9 +15,13 @@ import { usePathname, useRouter } from "next/navigation";
  * Utilise le hook `useNotifications` pour récupérer `unreadCount`.
  */
 export default function NotificationButton() {
+  const { appUser, firebaseUser } = useAuth();
+  const isAuthenticated = Boolean(appUser || firebaseUser);
   const { unreadCount } = useNotifications();
   const router = useRouter();
   const pathname = usePathname();
+
+  if (!isAuthenticated) return null;
 
   const isAlertsPage = pathname.startsWith("/alerts");
 

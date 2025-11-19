@@ -45,8 +45,17 @@ export class SessionService {
     return this.repo.create(sessionData);
   }
 
-  async updateActivity(sessionId: string) {
-    return this.repo.update(sessionId, {});
+  async updateActivity(
+    sessionId: string,
+    extendExpiryMs?: number
+  ): Promise<Session | null> {
+    const patch: Partial<Session> = {};
+    if (extendExpiryMs) {
+      patch.expiresAt = Timestamp.fromDate(
+        new Date(Date.now() + extendExpiryMs)
+      );
+    }
+    return this.repo.update(sessionId, patch);
   }
 
   async revokeSession(sessionId: string) {
