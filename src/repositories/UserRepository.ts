@@ -29,26 +29,46 @@ const mapDocToUser = (docSnap: DocumentSnapshot<DocumentData>): User => {
   if (!data) {
     throw new Error(`Aucune donnée pour le document ${docSnap.id}`);
   }
-  // On retourne un objet User complet et bien typé
+
+  const basePreferences = {
+    theme: "light" as const,
+    language: "fr" as const,
+    notifications: true,
+  };
+
+  const rawGlobalRole = data.globalRole;
+  const globalRole = Array.isArray(rawGlobalRole)
+    ? rawGlobalRole
+    : rawGlobalRole
+    ? [rawGlobalRole]
+    : [GlobalRole.USER];
+
   return {
     uid: docSnap.id,
-    email: data.email,
-    displayName: data.displayName || null,
-    photoURL: data.photoURL || null,
-    companies: data.companies || [],
-    companySelected: data.companySelected || null,
-    globalRole: data.globalRole || GlobalRole.USER,
-    onboardingCompleted: data.onboardingCompleted || false,
-    onboardingStep: data.onboardingStep || 1,
-    preferences: data.preferences || {
-      theme: "light",
-      language: "fr",
-      notifications: true,
+    email: data.email ?? "",
+    displayName: data.displayName ?? "",
+    photoURL: data.photoURL ?? null,
+    companies: data.companies ?? [],
+    companySelected: data.companySelected ?? null,
+    globalRole,
+    onboardingCompleted: Boolean(data.onboardingCompleted),
+    onboardingStep: data.onboardingStep ?? 1,
+    preferences: {
+      ...basePreferences,
+      ...(data.preferences ?? {}),
     },
-    favoriteLocationIds: data.favoriteLocationIds || [],
+    favoriteLocationIds: data.favoriteLocationIds ?? [],
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     lastLogin: data.lastLogin,
+    firstName: data.firstName ?? "",
+    lastName: data.lastName ?? "",
+    fullAddress: data.fullAddress ?? "",
+    legalStatus: data.legalStatus ?? "",
+    phone: data.phone ?? "",
+    position: data.position ?? "",
+    intent: data.intent ?? "",
+    isBanned: data.isBanned ?? false,
   } as User;
 };
 
