@@ -1,10 +1,10 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { motion } from "framer-motion";
 import { Bell } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * NotificationButton

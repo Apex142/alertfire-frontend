@@ -43,7 +43,8 @@ export function BrandLoader({ message }: BrandLoaderProps) {
             AlertFire prépare votre expérience
           </p>
           <p className="text-sm text-muted-foreground">
-            {message ?? "Sécurisation des données et synchronisation des capteurs"}
+            {message ??
+              "Sécurisation des données et synchronisation des capteurs"}
           </p>
         </div>
 

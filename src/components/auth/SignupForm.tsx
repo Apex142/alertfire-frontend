@@ -10,8 +10,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/contexts/AuthContext";
-import { notify } from "@/lib/notify";
 import { useAuthService } from "@/hooks/useAuthService";
+import { notify } from "@/lib/notify";
 import { AuthProviderType } from "@/types/enums/AuthProvider";
 
 /* -------------------- Schéma Zod -------------------- */

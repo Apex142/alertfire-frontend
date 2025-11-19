@@ -26,12 +26,7 @@ import { useEffect, useRef, useState } from "react";
 import NotificationButton from "./NotificationButton";
 
 export default function Navbar() {
-  const {
-    appUser,
-    firebaseUser,
-    logout,
-    loading: authLoading,
-  } = useAuth();
+  const { appUser, firebaseUser, logout, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
