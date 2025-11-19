@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
 import {
   AlertTriangle,
   Flame,
@@ -17,6 +16,7 @@ import {
   ToggleRight,
   Type,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import { useMapLayers } from "../MapLayersContext";
@@ -79,9 +79,7 @@ export const LayerTogglePanel = ({
 
   const selectedSeverity = useMemo(
     () =>
-      severityOptions.find(
-        (option) => option.value === filters.alertSeverity
-      ),
+      severityOptions.find((option) => option.value === filters.alertSeverity),
     [severityOptions, filters.alertSeverity]
   );
 
@@ -456,7 +454,9 @@ export const LayerTogglePanel = ({
                                   initial={false}
                                   animate={{ opacity: 1 }}
                                 >
-                                  {active ? "Couché affichée" : "Couché masquée"}
+                                  {active
+                                    ? "Couché affichée"
+                                    : "Couché masquée"}
                                 </motion.span>
                               </div>
                             </motion.button>

@@ -18,12 +18,14 @@ export const FireHaloLayer = ({ fires }: { fires: Project[] }) => {
   const showLabels = layers.fireLabels !== false;
 
   const uniqueFires = Array.from(
-    fires.reduce((map, fire) => {
-      if (!map.has(fire.id)) {
-        map.set(fire.id, fire);
-      }
-      return map;
-    }, new Map<string, Project>()).values()
+    fires
+      .reduce((map, fire) => {
+        if (!map.has(fire.id)) {
+          map.set(fire.id, fire);
+        }
+        return map;
+      }, new Map<string, Project>())
+      .values()
   );
 
   return (

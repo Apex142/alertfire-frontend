@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { useMemo, useRef } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 
 import { useFireAlerts } from "@/hooks/useFireAlerts";
@@ -15,10 +15,7 @@ import type { Project } from "@/types/entities/Project";
 import type { PropagationPrediction } from "@/types/entities/PropagationPrediction";
 import { haversineKm } from "@/utils/geo";
 
-import {
-  MapLayersProvider,
-  useMapLayers,
-} from "../MapLayersContext";
+import { MapLayersProvider, useMapLayers } from "../MapLayersContext";
 import {
   LayerFilterOption,
   LayerTogglePanel,
@@ -59,8 +56,8 @@ const slugify = (value: string) =>
 const resolveProjectCategory = (project: Project) => {
   const candidate =
     (project as unknown as { category?: string }).category ??
-    (project as unknown as { metadata?: { category?: string } }).metadata?.
-      category ??
+    (project as unknown as { metadata?: { category?: string } }).metadata
+      ?.category ??
     project.ownerCompanyId ??
     (project.isMaster ? "Site maître" : undefined);
 
@@ -345,7 +342,9 @@ function MapViewContent() {
   }, [filteredProjects, geoProjects]);
 
   const timeOptions = useMemo<TimeRangeOption[]>(() => {
-    if (TIME_RANGE_OPTIONS.some((option) => option.value === filters.timeRange)) {
+    if (
+      TIME_RANGE_OPTIONS.some((option) => option.value === filters.timeRange)
+    ) {
       return TIME_RANGE_OPTIONS;
     }
     return [
@@ -371,8 +370,7 @@ function MapViewContent() {
       return {
         headline: "Propagation indisponible",
         detail:
-          propagationError.message ??
-          "Impossible de calculer la propagation.",
+          propagationError.message ?? "Impossible de calculer la propagation.",
         canRetry: true,
       } as const;
     }
@@ -424,13 +422,27 @@ function MapViewContent() {
               />
               <motion.span
                 className="pointer-events-none absolute -top-24 -right-16 h-48 w-48 rounded-full bg-amber-400/25 blur-[120px] dark:bg-orange-500/20"
-                animate={{ scale: [0.9, 1.1, 0.9], opacity: [0.35, 0.55, 0.35] }}
-                transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut" }}
+                animate={{
+                  scale: [0.9, 1.1, 0.9],
+                  opacity: [0.35, 0.55, 0.35],
+                }}
+                transition={{
+                  duration: 4.8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
               <motion.span
                 className="pointer-events-none absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-sky-400/30 blur-[140px] dark:bg-sky-500/25"
-                animate={{ scale: [0.85, 1.05, 0.85], opacity: [0.28, 0.5, 0.28] }}
-                transition={{ duration: 5.6, repeat: Infinity, ease: "easeInOut" }}
+                animate={{
+                  scale: [0.85, 1.05, 0.85],
+                  opacity: [0.28, 0.5, 0.28],
+                }}
+                transition={{
+                  duration: 5.6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
               <motion.div
                 className="relative z-10 flex w-[min(24rem,92vw)] flex-col items-center gap-5 rounded-3xl border border-white/40 bg-white/85 px-7 py-7 text-center shadow-[0_25px_60px_rgba(15,23,42,0.18)] backdrop-blur-2xl dark:border-slate-800/70 dark:bg-slate-900/82 dark:shadow-[0_25px_60px_rgba(2,6,23,0.55)]"
@@ -443,12 +455,20 @@ function MapViewContent() {
                   <motion.span
                     className="absolute inset-0 rounded-full border border-dashed border-amber-400/50 dark:border-amber-500/30"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    transition={{
+                      duration: 8,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                   />
                   <motion.span
                     className="absolute inset-3 rounded-full bg-gradient-to-br from-amber-400/40 via-orange-500/25 to-rose-500/30 dark:from-amber-500/30 dark:via-orange-500/25 dark:to-rose-500/30"
                     animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
-                    transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 2.6,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   />
                   <Loader2 className="relative h-10 w-10 animate-spin text-amber-500 dark:text-amber-300" />
                 </div>
@@ -457,14 +477,22 @@ function MapViewContent() {
                     {loadingMessage}
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Analyse des foyers, des capteurs et des trajectoires probables…
+                    Analyse des foyers, des capteurs et des trajectoires
+                    probables…
                   </p>
                 </div>
                 <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-200/70 dark:bg-slate-800">
                   <motion.span
                     className="absolute inset-y-0 left-0 w-1/2 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 dark:from-amber-400 dark:via-orange-500 dark:to-rose-400"
-                    animate={{ x: ["-60%", "120%", "120%"], opacity: [0.2, 1, 0.2] }}
-                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                    animate={{
+                      x: ["-60%", "120%", "120%"],
+                      opacity: [0.2, 1, 0.2],
+                    }}
+                    transition={{
+                      duration: 2.2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   />
                 </div>
               </motion.div>

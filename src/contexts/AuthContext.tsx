@@ -208,9 +208,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-  /* B. User présent --------------------------------------------------- */
-  setFirebaseUser(user);
-  firebaseUserRef.current = user;
+      /* B. User présent --------------------------------------------------- */
+      setFirebaseUser(user);
+      firebaseUserRef.current = user;
 
       try {
         const authService = authServiceRef.current!;

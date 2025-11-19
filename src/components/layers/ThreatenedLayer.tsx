@@ -17,12 +17,14 @@ export const ThreatenedLayer = ({ projects }: { projects: Project[] }) => {
   const showLabels = layers.threatenedLabels !== false;
 
   const uniqueProjects = Array.from(
-    projects.reduce((map, project) => {
-      if (!map.has(project.id)) {
-        map.set(project.id, project);
-      }
-      return map;
-    }, new Map<string, Project>()).values()
+    projects
+      .reduce((map, project) => {
+        if (!map.has(project.id)) {
+          map.set(project.id, project);
+        }
+        return map;
+      }, new Map<string, Project>())
+      .values()
   );
 
   return (

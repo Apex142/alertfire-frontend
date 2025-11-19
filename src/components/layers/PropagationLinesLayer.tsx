@@ -1,9 +1,9 @@
 // components/layers/PropagationLinesLayer.tsx
 "use client";
-import { Polyline, Pane, Tooltip } from "react-leaflet";
+import { Pane, Polyline, Tooltip } from "react-leaflet";
 
 import { Project } from "@/types/entities/Project";
-import { haversineKm, formatDistance } from "@/utils/geo";
+import { formatDistance, haversineKm } from "@/utils/geo";
 import { useMapLayers } from "../MapLayersContext";
 
 const LINE_COLOR = "#f97316";

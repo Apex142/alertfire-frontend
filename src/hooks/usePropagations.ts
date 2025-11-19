@@ -37,9 +37,9 @@ export function usePropagation(activeProjectIds: Set<string>, hoursAhead = 48) {
 
     let cancelled = false;
 
-  const ids = signature ? signature.split("|") : [];
+    const ids = signature ? signature.split("|") : [];
 
-  PropagationService.bulkPredict(ids, hoursAhead)
+    PropagationService.bulkPredict(ids, hoursAhead)
       .then((res) => {
         if (cancelled) return;
         setPropagations(res);

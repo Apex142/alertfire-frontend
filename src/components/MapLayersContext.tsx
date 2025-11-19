@@ -73,17 +73,19 @@ export const MapLayersProvider = ({ children }: { children: ReactNode }) => {
   const resetFilters = () => setFilters({ ...defaultFilters });
 
   const showAll = () =>
-    setLayers(() =>
-      Object.fromEntries(
-        Object.keys(defaultState).map((key) => [key, true])
-      ) as LayersState
+    setLayers(
+      () =>
+        Object.fromEntries(
+          Object.keys(defaultState).map((key) => [key, true])
+        ) as LayersState
     );
 
   const hideAll = () =>
-    setLayers(() =>
-      Object.fromEntries(
-        Object.keys(defaultState).map((key) => [key, false])
-      ) as LayersState
+    setLayers(
+      () =>
+        Object.fromEntries(
+          Object.keys(defaultState).map((key) => [key, false])
+        ) as LayersState
     );
 
   const reset = () => {
