@@ -1,6 +1,6 @@
 import { FireAlertService } from "@/services/FireAlertService";
 import { FireAlert } from "@/types/entities/FireAlerts";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 /**
  * Hook temps-réel sur les alertes feu.
@@ -11,22 +11,55 @@ export function useFireAlerts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const fetchAlerts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await FireAlertService.getAll();
+      setAlerts(data);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Erreur inconnue"));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   /* abonnement temps-réel */
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
 
     const unsubscribe = FireAlertService.subscribe(
       (data) => {
+        if (cancelled) return;
         setAlerts(data);
         setLoading(false);
       },
       (err) => {
+        if (cancelled) return;
         setError(err instanceof Error ? err : new Error("Erreur inconnue"));
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+  // Bootstrap fetch avoids hanging when the realtime channel is slow.
+  (async () => {
+      try {
+        const data = await FireAlertService.getAll();
+        if (cancelled) return;
+        setAlerts(data);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err : new Error("Erreur inconnue"));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   /* projets en feu = Set pour lookup O(1) */
@@ -40,5 +73,6 @@ export function useFireAlerts() {
     activeProjectIds, // 👈 utilisation pratique côté carte
     loading,
     error,
+    refresh: fetchAlerts,
   };
 }

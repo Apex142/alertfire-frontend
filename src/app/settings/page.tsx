@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
 import { Bell, Lock, Moon, Save, Sun, UserCircle } from "lucide-react";
 import { useTheme } from "next-themes";
+import type { ChangeEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { BrandLoader } from "@/components/ui/BrandLoader";
 import { Button } from "@/components/ui/Button";
@@ -16,9 +16,9 @@ import {
   SelectTrigger,
 } from "@/components/ui/Select";
 import { useAuth } from "@/contexts/AuthContext";
-import { notify } from "@/lib/notify";
-import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthService } from "@/hooks/useAuthService";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { notify } from "@/lib/notify";
 
 const LANG_OPTIONS = [
   { value: "fr", label: "Français" },
@@ -103,12 +103,15 @@ function SettingsContent() {
       .map((value) => (value?.trim?.() ? value.trim()[0].toUpperCase() : ""))
       .join("");
     if (letters.length > 0) return letters;
-    if (appUser?.displayName) return appUser.displayName[0]?.toUpperCase() ?? "U";
+    if (appUser?.displayName)
+      return appUser.displayName[0]?.toUpperCase() ?? "U";
     return "U";
   }, [appUser?.displayName, personalForm.firstName, personalForm.lastName]);
 
   if (loading || !authService || !appUser) {
-    return <BrandLoader message="Synchronisation des préférences utilisateur" />;
+    return (
+      <BrandLoader message="Synchronisation des préférences utilisateur" />
+    );
   }
 
   const handlePersonalChange = (
@@ -127,7 +130,9 @@ function SettingsContent() {
       setSavingProfile(true);
       await authService.updateUserProfileData(appUser.uid, {
         ...personalForm,
-        displayName: `${personalForm.firstName} ${personalForm.lastName}`.trim() || appUser.displayName,
+        displayName:
+          `${personalForm.firstName} ${personalForm.lastName}`.trim() ||
+          appUser.displayName,
       });
       notify.success("Profil mis à jour");
     } catch (error) {
@@ -219,7 +224,8 @@ function SettingsContent() {
                 Informations personnelles
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Ces champs alimentent la fiche contact partagée avec votre équipe.
+                Ces champs alimentent la fiche contact partagée avec votre
+                équipe.
               </p>
             </div>
           </div>
@@ -314,7 +320,11 @@ function SettingsContent() {
                 }
               >
                 <SelectTrigger className="h-11 rounded-xl border border-slate-200/70 bg-white/80 px-3 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
-                  {LANG_OPTIONS.find((option) => option.value === preferences.language)?.label}
+                  {
+                    LANG_OPTIONS.find(
+                      (option) => option.value === preferences.language
+                    )?.label
+                  }
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border border-slate-200/70 bg-white/95 py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                   {LANG_OPTIONS.map((option) => (
@@ -340,8 +350,16 @@ function SettingsContent() {
               >
                 <SelectTrigger className="h-11 rounded-xl border border-slate-200/70 bg-white/80 px-3 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
                   <span className="flex items-center gap-2">
-                    {THEME_OPTIONS.find((option) => option.value === preferences.theme)?.icon}
-                    {THEME_OPTIONS.find((option) => option.value === preferences.theme)?.label}
+                    {
+                      THEME_OPTIONS.find(
+                        (option) => option.value === preferences.theme
+                      )?.icon
+                    }
+                    {
+                      THEME_OPTIONS.find(
+                        (option) => option.value === preferences.theme
+                      )?.label
+                    }
                   </span>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border border-slate-200/70 bg-white/95 py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
@@ -375,7 +393,9 @@ function SettingsContent() {
               >
                 <span
                   className={`h-6 w-6 transform rounded-full bg-white shadow transition ${
-                    preferences.notifications ? "translate-x-8" : "translate-x-0"
+                    preferences.notifications
+                      ? "translate-x-8"
+                      : "translate-x-0"
                   }`}
                 />
               </button>
@@ -402,7 +422,8 @@ function SettingsContent() {
                 Sécurité & sessions
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Gérer la réinitialisation du mot de passe et les connexions actives.
+                Gérer la réinitialisation du mot de passe et les connexions
+                actives.
               </p>
             </div>
           </div>
@@ -412,7 +433,8 @@ function SettingsContent() {
                 Réinitialiser le mot de passe
               </h3>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Envoie un e-mail sécurisé à {appUser.email} pour choisir un nouveau mot de passe.
+                Envoie un e-mail sécurisé à {appUser.email} pour choisir un
+                nouveau mot de passe.
               </p>
               <Button
                 variant="outline"

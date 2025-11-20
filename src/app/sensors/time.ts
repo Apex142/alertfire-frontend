@@ -1,6 +1,12 @@
 import { Timestamp } from "firebase/firestore";
 
-export type TemporalValue = Timestamp | Date | number | string | null | undefined;
+export type TemporalValue =
+  | Timestamp
+  | Date
+  | number
+  | string
+  | null
+  | undefined;
 
 export const toDate = (value: TemporalValue): Date | null => {
   if (!value && value !== 0) return null;

@@ -30,7 +30,11 @@ import { ThreatenedLayer } from "../layers/ThreatenedLayer";
 const FALLBACK_CENTER: [number, number] = [43.2306, 5.4576];
 
 const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
-  { value: 6, label: "6 h", description: "Foyers détectés dans les 6 dernières heures" },
+  {
+    value: 6,
+    label: "6 h",
+    description: "Foyers détectés dans les 6 dernières heures",
+  },
   { value: 12, label: "12 h", description: "Vision demi-journée" },
   { value: 24, label: "24 h", description: "Activité sur la dernière journée" },
   { value: 48, label: "48 h", description: "Courte période glissante" },
@@ -262,9 +266,10 @@ function MapViewContent() {
     [filteredAlerts]
   );
 
-  const horizonHours = filters.timeRange > 0
-    ? Math.max(filters.timeRange, 6)
-    : DEFAULT_UNBOUNDED_PROPAGATION_HORIZON;
+  const horizonHours =
+    filters.timeRange > 0
+      ? Math.max(filters.timeRange, 6)
+      : DEFAULT_UNBOUNDED_PROPAGATION_HORIZON;
 
   const {
     propagations,

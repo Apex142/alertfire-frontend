@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
@@ -12,15 +11,16 @@ import {
   ShieldCheck,
   SignalHigh,
 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 import AddProjectWizard from "@/components/projects/AddProjectWizard";
-import { Button } from "@/components/ui/Button";
 import { BrandLoader } from "@/components/ui/BrandLoader";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useFireAlerts } from "@/hooks/useFireAlerts";
 import { useProjects } from "@/hooks/useProjects";
-import type { Project } from "@/types/entities/Project";
 import type { FireAlert } from "@/types/entities/FireAlerts";
+import type { Project } from "@/types/entities/Project";
 import { ProjectStatus } from "@/types/enums/ProjectStatus";
 
 import ProjectList from "./ProjectList";
@@ -110,14 +110,20 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
     projects,
     loading: projectsLoading,
     error: projectsError,
-    refresh,
+    refresh: refreshProjects,
   } = useProjects();
 
   const {
     alerts,
     loading: alertsLoading,
     error: alertsError,
+    refresh: refreshAlerts,
   } = useFireAlerts();
+
+  const handleRefresh = useCallback(() => {
+    refreshProjects();
+    refreshAlerts();
+  }, [refreshProjects, refreshAlerts]);
 
   const isInitialLoading = projectsLoading && projects.length === 0;
   const isSyncing = projectsLoading || alertsLoading;
@@ -135,29 +141,42 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
   const stats = useMemo(() => {
     const total = projects.length;
 
-    const critical = projects.filter((project) => project.status === ProjectStatus.FIRE).length;
-    const warning = projects.filter((project) => project.status === ProjectStatus.WARNING).length;
+    const critical = projects.filter(
+      (project) => project.status === ProjectStatus.FIRE
+    ).length;
+    const warning = projects.filter(
+      (project) => project.status === ProjectStatus.WARNING
+    ).length;
     const connected = projects.filter(
       (project) =>
         project.status !== ProjectStatus.OFFLINE &&
         project.status !== ProjectStatus.BURNED
     ).length;
-    const offline = projects.filter((project) => project.status === ProjectStatus.OFFLINE).length;
+    const offline = projects.filter(
+      (project) => project.status === ProjectStatus.OFFLINE
+    ).length;
 
-    const technicianCount = new Set(projects.flatMap((project) => project.technicianIds)).size;
-    const firefighterCount = new Set(projects.flatMap((project) => project.firefighterIds)).size;
+    const technicianCount = new Set(
+      projects.flatMap((project) => project.technicianIds)
+    ).size;
+    const firefighterCount = new Set(
+      projects.flatMap((project) => project.firefighterIds)
+    ).size;
 
     const batteryValues = projects
       .map((project) => project.lastReading?.battery)
       .filter((value): value is number => typeof value === "number");
     const averageBattery = batteryValues.length
       ? Math.round(
-          batteryValues.reduce((acc, value) => acc + value, 0) / batteryValues.length
+          batteryValues.reduce((acc, value) => acc + value, 0) /
+            batteryValues.length
         )
       : null;
 
     const latestActivityDate = projects
-      .map((project) => toDate(project.lastSeenAt ?? project.updatedAt ?? project.createdAt))
+      .map((project) =>
+        toDate(project.lastSeenAt ?? project.updatedAt ?? project.createdAt)
+      )
       .filter((date): date is Date => Boolean(date))
       .sort((a, b) => b.getTime() - a.getTime())[0];
 
@@ -212,13 +231,15 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
   }, [projects]);
 
   if (isInitialLoading) {
-    return <BrandLoader message="Chargement des capteurs et incidents en direct" />;
+    return (
+      <BrandLoader message="Chargement des capteurs et incidents en direct" />
+    );
   }
 
   const showCreateButton = copy.allowCreation;
 
-    return (
-      <main className="mx-auto max-w-7xl space-y-9 px-3 py-8 sm:px-6 sm:py-12">
+  return (
+    <main className="mx-auto max-w-7xl space-y-9 px-3 py-8 sm:px-6 sm:py-12">
       <section className="overflow-hidden rounded-3xl border border-white/30 bg-gradient-to-br from-orange-500/85 via-rose-500/80 to-violet-600/80 p-[1px] shadow-[0_35px_120px_rgba(15,23,42,0.35)] dark:border-slate-800/60">
         <div className="h-full w-full rounded-[calc(1.5rem-1px)] bg-white/90 p-6 backdrop-blur dark:bg-slate-950/85 md:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -246,8 +267,8 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
                 <Button
                   variant="outline"
                   startIcon={<RefreshCw className="h-4 w-4" />}
-                  onClick={refresh}
-                  loading={projectsLoading}
+                  onClick={handleRefresh}
+                  loading={isSyncing}
                   className="backdrop-blur"
                 >
                   {copy.secondaryCta}
@@ -288,13 +309,21 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
             <MetricCard
               icon={<SignalHigh className="h-5 w-5 text-emerald-500" />}
               label="Disponibilité"
-              value={stats.total === 0 ? "—" : `${Math.round((stats.connected / stats.total) * 100)} %`}
+              value={
+                stats.total === 0
+                  ? "—"
+                  : `${Math.round((stats.connected / stats.total) * 100)} %`
+              }
               hint="Taux de capteurs opérationnels"
             />
             <MetricCard
               icon={<BatteryCharging className="h-5 w-5 text-sky-500" />}
               label="Batterie moyenne"
-              value={stats.averageBattery !== null ? `${stats.averageBattery} %` : "—"}
+              value={
+                stats.averageBattery !== null
+                  ? `${stats.averageBattery} %`
+                  : "—"
+              }
               hint={`${stats.technicianCount} techniciens · ${stats.firefighterCount} pompiers`}
             />
           </div>
@@ -307,11 +336,13 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
         >
-          {projectsError?.message || alertsError?.message || "Une erreur est survenue lors du chargement des données."}
+          {projectsError?.message ||
+            alertsError?.message ||
+            "Une erreur est survenue lors du chargement des données."}
         </motion.div>
       )}
 
-  <section className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+      <section className="grid gap-6 xl:grid-cols-[2fr_1fr]">
         <ProjectList
           projects={projects}
           loading={projects.length === 0 && isSyncing}
@@ -343,15 +374,21 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
                   <div key={status} className="space-y-1">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span className="flex items-center gap-2">
-                        <span className={`h-2.5 w-2.5 rounded-full ${statusPalette[status]}`} />
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${statusPalette[status]}`}
+                        />
                         {statusLabels[status]}
                       </span>
-                      <span>{count} · {ratio}%</span>
+                      <span>
+                        {count} · {ratio}%
+                      </span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-slate-800/70">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.max(ratio, count > 0 ? 6 : 0)}%` }}
+                        animate={{
+                          width: `${Math.max(ratio, count > 0 ? 6 : 0)}%`,
+                        }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                         className={`h-full ${statusPalette[status]} rounded-full`}
                       />
@@ -404,7 +441,14 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
                         <span>{formatRelativeTime(event.at)}</span>
                       </div>
                       <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        {formatDateTime(event.at)} · {typeof event.temperature === "number" ? `${event.temperature.toFixed(1)}°C` : "Température n/c"} · {typeof event.smoke === "number" ? `${event.smoke} ppm` : "Fumées n/c"}
+                        {formatDateTime(event.at)} ·{" "}
+                        {typeof event.temperature === "number"
+                          ? `${event.temperature.toFixed(1)}°C`
+                          : "Température n/c"}{" "}
+                        ·{" "}
+                        {typeof event.smoke === "number"
+                          ? `${event.smoke} ppm`
+                          : "Fumées n/c"}
                       </p>
                       {typeof event.battery === "number" && (
                         <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
@@ -420,7 +464,10 @@ export default function SensorsWorkspace({ mode }: SensorsWorkspaceProps) {
         </div>
       </section>
 
-      <AddProjectWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      <AddProjectWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+      />
     </main>
   );
 }
@@ -433,7 +480,13 @@ type MetricCardProps = {
   tone?: "default" | "warning";
 };
 
-function MetricCard({ icon, label, value, hint, tone = "default" }: MetricCardProps) {
+function MetricCard({
+  icon,
+  label,
+  value,
+  hint,
+  tone = "default",
+}: MetricCardProps) {
   const toneClasses =
     tone === "warning"
       ? "border-red-200/60 bg-red-50/80 text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
@@ -456,7 +509,9 @@ function MetricCard({ icon, label, value, hint, tone = "default" }: MetricCardPr
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
           {label}
         </p>
-        {hint && <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
+        {hint && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>
+        )}
       </div>
     </motion.div>
   );

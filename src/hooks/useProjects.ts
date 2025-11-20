@@ -6,6 +6,9 @@ import { useCallback, useEffect, useState } from "react";
 const sortByName = (a: Project, b: Project) =>
   (a.name ?? "").localeCompare(b.name ?? "");
 
+const prepareProjects = (data: Project[]) =>
+  data.filter((project) => !project.isDeleted).sort(sortByName);
+
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +20,7 @@ export function useProjects() {
       setLoading(true);
       setError(null);
       const data = await ProjectService.getAll();
-      setProjects(data.filter((p) => !p.isDeleted).sort(sortByName));
+      setProjects(prepareProjects(data));
     } catch (e) {
       setError(e instanceof Error ? e : new Error("Erreur inconnue"));
     } finally {
@@ -27,20 +30,40 @@ export function useProjects() {
 
   /* --- temps réel --- */
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
 
     const unsubscribe = ProjectService.subscribe(
       (data) => {
-        setProjects(data.filter((p) => !p.isDeleted).sort(sortByName));
+        if (cancelled) return;
+        setProjects(prepareProjects(data));
         setLoading(false);
       },
       (e) => {
+        if (cancelled) return;
         setError(e instanceof Error ? e : new Error("Erreur inconnue"));
         setLoading(false);
       }
     );
 
-    return () => unsubscribe();
+  // Bootstrap fetch avoids hanging when the realtime channel is slow.
+  (async () => {
+      try {
+        const data = await ProjectService.getAll();
+        if (cancelled) return;
+        setProjects(prepareProjects(data));
+      } catch (e) {
+        if (cancelled) return;
+        setError(e instanceof Error ? e : new Error("Erreur inconnue"));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   return { projects, loading, error, refresh: fetchProjects };

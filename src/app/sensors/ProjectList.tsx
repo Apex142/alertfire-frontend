@@ -1,14 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   BatteryCharging,
-  ClipboardPenLine,
   ChevronDown,
+  ClipboardPenLine,
   Flame,
   LayoutGrid,
   MapPin,
@@ -18,6 +15,9 @@ import {
   ThermometerSun,
   Waves,
 } from "lucide-react";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -100,7 +100,10 @@ const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
 ];
 
 const normalize = (value: string) =>
-  value.toLowerCase().normalize("NFD").replace(/[^a-z0-9\s]/g, "");
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[^a-z0-9\s]/g, "");
 
 const severityRank: Record<ProjectStatus, number> = {
   [ProjectStatus.FIRE]: 0,
@@ -202,9 +205,13 @@ export default function ProjectList({
               onChange={(event) => setSearch(event.target.value)}
             />
           </div>
-          <Select value={sortKey} onValueChange={(value) => setSortKey(value as SortKey)}>
+          <Select
+            value={sortKey}
+            onValueChange={(value) => setSortKey(value as SortKey)}
+          >
             <SelectTrigger className="h-11 w-full rounded-2xl border border-slate-200/70 bg-white/90 px-4 text-sm font-medium text-slate-700 shadow-sm focus:border-orange-300 focus:ring-2 focus:ring-orange-200/70 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 sm:w-auto sm:min-w-[13rem]">
-              Trier · {SORT_OPTIONS.find((option) => option.value === sortKey)?.label}
+              Trier ·{" "}
+              {SORT_OPTIONS.find((option) => option.value === sortKey)?.label}
             </SelectTrigger>
             <SelectContent className="rounded-2xl border border-slate-200/70 bg-white/95 shadow-xl dark:border-slate-800 dark:bg-slate-900">
               {SORT_OPTIONS.map((option) => (
@@ -240,31 +247,35 @@ export default function ProjectList({
       </header>
 
       <div className="-mx-1 flex gap-2 overflow-x-auto pb-2 pl-1 pr-1 sm:flex-wrap sm:overflow-visible">
-        {(["all", ...Object.values(ProjectStatus)] as StatusFilter[]).map((status) => {
-          const isActive = statusFilter === status;
-          const count = statusCounts[status] ?? 0;
-          const meta = STATUS_META[status as ProjectStatus];
+        {(["all", ...Object.values(ProjectStatus)] as StatusFilter[]).map(
+          (status) => {
+            const isActive = statusFilter === status;
+            const count = statusCounts[status] ?? 0;
+            const meta = STATUS_META[status as ProjectStatus];
 
-          return (
-            <button
-              key={status}
-              type="button"
-              onClick={() => setStatusFilter(status)}
-              className={cn(
-                "inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-medium transition",
-                isActive
-                  ? "border-slate-900 bg-slate-900 text-white shadow dark:border-white dark:bg-white dark:text-slate-900"
-                  : "border-slate-200/70 bg-white/80 text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-slate-600",
-                status !== "all" && meta?.softBg
-              )}
-            >
-              <span className="capitalize">
-                {status === "all" ? "Tous" : meta?.label ?? status}
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-300">{count}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setStatusFilter(status)}
+                className={cn(
+                  "inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-medium transition",
+                  isActive
+                    ? "border-slate-900 bg-slate-900 text-white shadow dark:border-white dark:bg-white dark:text-slate-900"
+                    : "border-slate-200/70 bg-white/80 text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-slate-600",
+                  status !== "all" && meta?.softBg
+                )}
+              >
+                <span className="capitalize">
+                  {status === "all" ? "Tous" : meta?.label ?? status}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-300">
+                  {count}
+                </span>
+              </button>
+            );
+          }
+        )}
       </div>
 
       {loading && (
@@ -437,7 +448,9 @@ function ProjectCard({
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span>Dernier contact {lastContact}</span>
-            {latestAlert && <span>Dernière alerte {formatRelativeTime(latestAlert)}</span>}
+            {latestAlert && (
+              <span>Dernière alerte {formatRelativeTime(latestAlert)}</span>
+            )}
             <span>Installé {installedOn}</span>
           </div>
 
@@ -467,7 +480,9 @@ function ProjectCard({
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      notify.info(`Demande de correction envoyée pour ${project.name}.`);
+                      notify.info(
+                        `Demande de correction envoyée pour ${project.name}.`
+                      );
                     }}
                     className="w-full sm:w-auto"
                   >
@@ -481,7 +496,9 @@ function ProjectCard({
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      notify.info("Ouverture du module d’édition prochaine version.");
+                      notify.info(
+                        "Ouverture du module d’édition prochaine version."
+                      );
                     }}
                     className="w-full sm:w-auto"
                   >
@@ -507,7 +524,9 @@ function ProjectCard({
                   label="Coordonnées"
                   value={
                     project.latitude && project.longitude
-                      ? `${project.latitude.toFixed(3)} · ${project.longitude.toFixed(3)}`
+                      ? `${project.latitude.toFixed(
+                          3
+                        )} · ${project.longitude.toFixed(3)}`
                       : "À confirmer"
                   }
                 />
@@ -529,7 +548,6 @@ function ProjectCard({
               </motion.div>
             )}
           </AnimatePresence>
-
         </div>
       </Link>
     </motion.div>
