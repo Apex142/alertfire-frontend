@@ -30,11 +30,18 @@ import { ThreatenedLayer } from "../layers/ThreatenedLayer";
 const FALLBACK_CENTER: [number, number] = [43.2306, 5.4576];
 
 const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
-  { value: 12, label: "12 h" },
-  { value: 24, label: "24 h" },
-  { value: 48, label: "48 h" },
-  { value: 72, label: "72 h" },
+  { value: 6, label: "6 h", description: "Foyers détectés dans les 6 dernières heures" },
+  { value: 12, label: "12 h", description: "Vision demi-journée" },
+  { value: 24, label: "24 h", description: "Activité sur la dernière journée" },
+  { value: 48, label: "48 h", description: "Courte période glissante" },
+  { value: 72, label: "72 h", description: "Surveillance 3 jours" },
+  { value: 168, label: "7 j", description: "Analyse hebdomadaire" },
+  { value: 336, label: "14 j", description: "Vision bi-hebdomadaire" },
+  { value: 720, label: "30 j", description: "Historique mensuel" },
+  { value: 0, label: "Tout", description: "Historique complet sans limite" },
 ];
+
+const DEFAULT_UNBOUNDED_PROPAGATION_HORIZON = 240;
 
 type SeverityLevel = "critical" | "high" | "moderate" | "watch";
 
@@ -255,7 +262,9 @@ function MapViewContent() {
     [filteredAlerts]
   );
 
-  const horizonHours = Math.max(filters.timeRange, 1);
+  const horizonHours = filters.timeRange > 0
+    ? Math.max(filters.timeRange, 6)
+    : DEFAULT_UNBOUNDED_PROPAGATION_HORIZON;
 
   const {
     propagations,

@@ -374,6 +374,7 @@ export const LayerTogglePanel = ({
                                 ? "bg-slate-900 text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] dark:bg-white dark:text-slate-900"
                                 : "border border-slate-200/70 bg-white/70 text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-slate-600"
                             }`}
+                            title={option.description ?? option.label}
                             whileHover={{ scale: active ? 1.015 : 1.03 }}
                             whileTap={{ scale: 0.96 }}
                             aria-pressed={active}
