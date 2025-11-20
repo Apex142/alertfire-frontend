@@ -46,8 +46,8 @@ export function useProjects() {
       }
     );
 
-  // Bootstrap fetch avoids hanging when the realtime channel is slow.
-  (async () => {
+    // Bootstrap fetch avoids hanging when the realtime channel is slow.
+    (async () => {
       try {
         const data = await ProjectService.getAll();
         if (cancelled) return;

@@ -42,8 +42,8 @@ export function useFireAlerts() {
       }
     );
 
-  // Bootstrap fetch avoids hanging when the realtime channel is slow.
-  (async () => {
+    // Bootstrap fetch avoids hanging when the realtime channel is slow.
+    (async () => {
       try {
         const data = await FireAlertService.getAll();
         if (cancelled) return;
